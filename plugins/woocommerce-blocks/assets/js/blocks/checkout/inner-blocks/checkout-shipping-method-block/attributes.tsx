@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { __ } from '@wordpress/i18n';
+import { getSetting } from '@woocommerce/settings';
 
 /**
  * Internal dependencies
@@ -9,9 +10,13 @@ import { __ } from '@wordpress/i18n';
 import formStepAttributes from '../../form-step/attributes';
 import { defaultShippingText, defaultLocalPickupText } from './constants';
 
+const defaultTitle = getSetting( 'localPickupEnabled', false )
+	? __( 'Delivery', 'woocommerce' )
+	: __( 'Shipping method', 'woocommerce' );
+
 export default {
 	...formStepAttributes( {
-		defaultTitle: __( 'Shipping method', 'woocommerce' ),
+		defaultTitle,
 		defaultDescription: __(
 			'Select how you would like to receive your order.',
 			'woocommerce'
