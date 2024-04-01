@@ -163,8 +163,6 @@ const Form = < T extends AddressFormValues | ContactFormValues >( {
 				}
 
 				if ( field.key === 'address_2' ) {
-					console.log( values[ field.key ] );
-
 					return (
 						<>
 							{ isAddress2Visible ? (
