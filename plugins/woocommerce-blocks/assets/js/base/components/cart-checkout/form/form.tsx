@@ -16,7 +16,13 @@ import {
 	BillingStateInput,
 	ShippingStateInput,
 } from '@woocommerce/base-components/state-input';
-import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from '@wordpress/element';
 import { useInstanceId } from '@wordpress/compose';
 import { useShallowEqual } from '@woocommerce/base-hooks';
 import isShallowEqual from '@wordpress/is-shallow-equal';
@@ -77,12 +83,13 @@ const Form = < T extends AddressFormValues | ContactFormValues >( {
 		objectHasProp( values, 'address_2' ) && values.address_2 !== ''
 	);
 
-	const toggleAddress2Visibility = (
-		event: React.MouseEvent< HTMLElement >
-	) => {
-		event.preventDefault();
-		setIsAddress2Visible( ( prevVisibility ) => ! prevVisibility );
-	};
+	const toggleAddress2Visibility = useCallback(
+		( event: React.MouseEvent< HTMLElement > ) => {
+			event.preventDefault();
+			setIsAddress2Visible( ( prevVisibility ) => ! prevVisibility );
+		},
+		[]
+	);
 
 	// Stores refs for rendered fields so we can access them later.
 	const fieldsRef = useRef<
