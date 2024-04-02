@@ -35,7 +35,7 @@ class LaunchYourStore {
 		);
 
 		if ( isset( $_POST['woocommerce_store_pages_only'] ) ) {
-			$this->possibly_update_coming_soon_page_content( wp_unslash( $_POST['woocommerce_store_pages_only'] ) );
+			$this->possibly_update_coming_soon_page_content( wc_clean( wp_unslash( $_POST['woocommerce_store_pages_only'] ) ) );
 		}
 
 		foreach ( $options as $name => $option ) {
@@ -65,8 +65,8 @@ class LaunchYourStore {
 
 		$page_id               = get_option( 'woocommerce_coming_soon_page_id' );
 		$page                  = get_post( $page_id );
-		$original_page_content = 'yes' === $current_store_pages_only 
-				? $this->get_store_only_coming_soon_content() 
+		$original_page_content = 'yes' === $current_store_pages_only
+				? $this->get_store_only_coming_soon_content()
 				: $this->get_entire_site_coming_soon_content();
 
 		// If the page exists and the content is not the same as the original content, its been edited from its original state. Return early to respect any changes.
@@ -75,8 +75,8 @@ class LaunchYourStore {
 		}
 
 		if ( $page_id ) {
-			$next_page_content = 'yes' === $next_store_pages_only 
-				? $this->get_store_only_coming_soon_content() 
+			$next_page_content = 'yes' === $next_store_pages_only
+				? $this->get_store_only_coming_soon_content()
 				: $this->get_entire_site_coming_soon_content();
 			wp_update_post(
 				array(
@@ -95,8 +95,8 @@ class LaunchYourStore {
 	public function get_store_only_coming_soon_content() {
 		$heading    = __( 'Great things coming soon', 'woocommerce' );
 		$subheading = __( 'Something big is brewing! Our store is in the works - Launching shortly!', 'woocommerce' );
-		
-		return sprintf( 
+
+		return sprintf(
 			'<!-- wp:group {"layout":{"type":"constrained"}} -->
 			<div class="wp-block-group"><!-- wp:spacer -->
 			<div style="height:100px" aria-hidden="true" class="wp-block-spacer"></div>
@@ -117,9 +117,9 @@ class LaunchYourStore {
 			<!-- wp:spacer -->
 			<div style="height:100px" aria-hidden="true" class="wp-block-spacer"></div>
 			<!-- /wp:spacer --></div>
-			<!-- /wp:group -->', 
-			$heading, 
-			$subheading 
+			<!-- /wp:group -->',
+			$heading,
+			$subheading
 		);
 	}
 
@@ -130,7 +130,7 @@ class LaunchYourStore {
 	 */
 	public function get_entire_site_coming_soon_content() {
 		$heading = __( 'Pardon our dust! We\'re working on something amazing -- check back soon!', 'woocommerce' );
-		
+
 		return sprintf(
 			'<!-- wp:group {"layout":{"type":"constrained"}} -->
 			<div class="wp-block-group"><!-- wp:spacer -->
@@ -144,7 +144,7 @@ class LaunchYourStore {
 			<!-- wp:spacer -->
 			<div style="height:100px" aria-hidden="true" class="wp-block-spacer"></div>
 			<!-- /wp:spacer --></div>
-			<!-- /wp:group -->', 
+			<!-- /wp:group -->',
 			$heading
 		);
 	}
