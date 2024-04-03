@@ -2,18 +2,18 @@
 namespace Automattic\WooCommerce\Blocks\Templates;
 
 /**
- * ComingSoonTemplate class.
+ * ComingSoonStoreOnlyTemplate class.
  *
  * @internal
  */
-class ComingSoonTemplate extends AbstractPageTemplate {
+class ComingSoonStoreOnlyTemplate extends AbstractPageTemplate {
 
 	/**
 	 * The slug of the template.
 	 *
 	 * @var string
 	 */
-	const SLUG = 'page-coming-soon';
+	const SLUG = 'page-coming-soon-store-only';
 
 	/**
 	 * Initialization method.
@@ -30,7 +30,7 @@ class ComingSoonTemplate extends AbstractPageTemplate {
 	 * @return string
 	 */
 	public function get_template_title() {
-		return _x( 'Page: Coming soon', 'Template name', 'woocommerce' );
+		return _x( 'Page: Coming soon store only', 'Template name', 'woocommerce' );
 
 	}
 
@@ -40,7 +40,7 @@ class ComingSoonTemplate extends AbstractPageTemplate {
 	 * @return string
 	 */
 	public function get_template_description() {
-		return __( 'Page template for Coming soon page.', 'woocommerce' );
+		return __( 'Page template for Coming soon page when access is restricted for store pages.', 'woocommerce' );
 
 	}
 
@@ -50,7 +50,8 @@ class ComingSoonTemplate extends AbstractPageTemplate {
 	 * @return \WP_Post|null Post object or null.
 	 */
 	protected function get_placeholder_page() {
-		$page_id = wc_get_page_id( 'coming-soon' );
+		// This isn't quite right. We need to get the page ID from the option.
+		$page_id = wc_get_page_id( 'coming-soon-store-only' );
 		return $page_id ? get_post( $page_id ) : null;
 	}
 
