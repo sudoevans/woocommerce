@@ -101,9 +101,19 @@ test.describe( 'Assembler -> Color Pickers', () => {
 		for ( const colorPicker of colorPickers ) {
 			await colorPicker.waitFor();
 			await colorPicker.click();
-			// The snapshot is created in headless mode. Please make sure the browser is in headless mode to ensure the snapshot is correct.
+			const styles = await editor.locator( 'style' ).allInnerTexts();
+			// Remove editor styles from the snapshot
+			const stylesWithoutEditorStyles = styles.filter(
+				( css ) => ! css.includes( '.editor-styles-wrapper' )
+			);
+
 			await expect(
-				( await editor.locator( 'style' ).allInnerTexts() ).join( ',' )
+				// WordPress adds a unique number to the class name, so we need to remove it
+				stylesWithoutEditorStyles
+					.map( ( css ) =>
+						css.replace( /.wp-container-content-(\d+)/, '' )
+					)
+					.join( ',' )
 			).toMatchSnapshot( {
 				name: 'color-palette-' + index,
 			} );
