@@ -85,6 +85,11 @@ class LaunchYourStore {
 					'post_content' => $next_page_content,
 				)
 			);
+
+			$template_id = 'yes' === $next_store_pages_only
+				? 'coming-soon-store-only'
+				: 'coming-soon-entire-site';
+			update_post_meta( $page_id, '_wp_page_template', $template_id );
 		}
 	}
 
@@ -170,7 +175,8 @@ class LaunchYourStore {
 				_x( 'Coming Soon', 'Page title', 'woocommerce' ),
 				$store_pages_only ? $this->get_store_only_coming_soon_content() : $this->get_entire_site_coming_soon_content(),
 			);
-			update_post_meta( $page_id, '_wp_page_template', 'coming-soon-store-only' );
+			$template_id = $store_pages_only ? 'coming-soon-store-only' : 'coming-soon-entire-site';
+			update_post_meta( $page_id, '_wp_page_template', $template_id );
 			// wc_create_page doesn't create options with autoload = yes.
 			// Since we'll querying the option on WooCommerce home,
 			// we should update the option to set autoload to yes.
