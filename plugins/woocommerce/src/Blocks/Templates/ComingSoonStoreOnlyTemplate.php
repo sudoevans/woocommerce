@@ -19,8 +19,6 @@ class ComingSoonStoreOnlyTemplate extends AbstractPageTemplate {
 	 * Initialization method.
 	 */
 	public function init() {
-		add_action( 'template_redirect', array( $this, 'render_block_template' ) );
-
 		parent::init();
 	}
 
