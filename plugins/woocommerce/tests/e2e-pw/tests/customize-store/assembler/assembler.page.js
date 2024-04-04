@@ -42,7 +42,7 @@ export class AssemblerPage {
 	async getEditor() {
 		const assembler = await this.getAssembler();
 		return assembler.frameLocator(
-			'.edit-site-layout__canvas-container [name="editor-canvas"]'
+			'.woocommerce-customize-store__edit-site-editor [name="editor-canvas"]'
 		);
 	}
 }
