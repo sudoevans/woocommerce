@@ -1,8 +1,7 @@
 /**
  * External dependencies
  */
-import { BlockData } from '@woocommerce/e2e-types';
-import { test as base, expect } from '@woocommerce/e2e-playwright-utils';
+import { test as base, expect, BlockData } from '@woocommerce/e2e-utils';
 
 /**
  * Internal dependencies
@@ -12,8 +11,12 @@ import { REGULAR_PRICED_PRODUCT_NAME } from './constants';
 
 declare global {
 	interface Window {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		wcSettings: { storePages: any };
+		wcSettings: {
+			storePages: {
+				terms: { permalink: string };
+				privacy: { permalink: string };
+			};
+		};
 	}
 }
 const blockData: BlockData = {
@@ -42,32 +45,42 @@ test.describe( 'Merchant → Checkout', () => {
 	// `as string` is safe here because we know the variable is a string, it is defined above.
 	const blockSelectorInEditor = blockData.selectors.editor.block as string;
 
-	test.beforeEach( async ( { editorUtils, admin, editor } ) => {
+	test.beforeEach( async ( { admin, editor } ) => {
 		await admin.visitSiteEditor( {
 			postId: 'woocommerce/woocommerce//page-checkout',
 			postType: 'wp_template',
+			canvas: 'edit',
 		} );
-		await editorUtils.enterEditMode();
 		await editor.openDocumentSettingsSidebar();
 	} );
 
 	test( 'renders without crashing and can only be inserted once', async ( {
 		page,
-		editorUtils,
 		editor,
 	} ) => {
-		const blockPresence = await editorUtils.getBlockByName(
-			blockData.slug
-		);
+		const blockPresence = await editor.getBlockByName( blockData.slug );
 		expect( blockPresence ).toBeTruthy();
 
-		await editorUtils.openGlobalBlockInserter();
+		await editor.openGlobalBlockInserter();
 		await page.getByPlaceholder( 'Search' ).fill( blockData.slug );
 		const checkoutBlockButton = page.getByRole( 'option', {
 			name: blockData.name,
 			exact: true,
 		} );
-		expect( await editorUtils.ensureNoErrorsOnBlockPage() ).toBe( true );
+
+		const errorMessages = [
+			/This block contains unexpected or invalid content/gi,
+			/Your site doesn’t include support for/gi,
+			/There was an error whilst rendering/gi,
+			/This block has encountered an error and cannot be previewed/gi,
+		];
+
+		for ( const errorMessage of errorMessages ) {
+			await expect(
+				editor.canvas.getByText( errorMessage )
+			).toBeHidden();
+		}
+
 		await expect(
 			editor.canvas.locator( blockSelectorInEditor )
 		).toBeVisible();
@@ -90,6 +103,7 @@ test.describe( 'Merchant → Checkout', () => {
 		} );
 
 		test( 'Merchant can see T&S and Privacy Policy links without checkbox', async ( {
+			page,
 			frontendUtils,
 			checkoutPageObject,
 		} ) => {
@@ -111,15 +125,16 @@ test.describe( 'Merchant → Checkout', () => {
 				.getByText( 'Privacy Policy' )
 				.first();
 
-			const { termsPageUrl, privacyPageUrl } =
-				await frontendUtils.page.evaluate( () => {
+			const { termsPageUrl, privacyPageUrl } = await page.evaluate(
+				() => {
+					const { terms, privacy } = window.wcSettings.storePages;
+
 					return {
-						termsPageUrl:
-							window.wcSettings.storePages.terms.permalink,
-						privacyPageUrl:
-							window.wcSettings.storePages.privacy.permalink,
+						termsPageUrl: terms.permalink,
+						privacyPageUrl: privacy.permalink,
 					};
-				} );
+				}
+			);
 			await expect( termsAndConditions ).toHaveAttribute(
 				'href',
 				termsPageUrl
@@ -140,15 +155,14 @@ test.describe( 'Merchant → Checkout', () => {
 	test( 'Merchant can see T&S and Privacy Policy links with checkbox', async ( {
 		frontendUtils,
 		checkoutPageObject,
-		editorUtils,
 		admin,
 		editor,
 	} ) => {
 		await admin.visitSiteEditor( {
 			postId: 'woocommerce/woocommerce//page-checkout',
 			postType: 'wp_template',
+			canvas: 'edit',
 		} );
-		await editorUtils.enterEditMode();
 		await editor.openDocumentSettingsSidebar();
 		await editor.selectBlocks(
 			blockSelectorInEditor +
@@ -190,8 +204,8 @@ test.describe( 'Merchant → Checkout', () => {
 		await admin.visitSiteEditor( {
 			postId: 'woocommerce/woocommerce//page-checkout',
 			postType: 'wp_template',
+			canvas: 'edit',
 		} );
-		await editorUtils.enterEditMode();
 		await editor.openDocumentSettingsSidebar();
 		await editor.selectBlocks(
 			blockSelectorInEditor +
@@ -208,7 +222,6 @@ test.describe( 'Merchant → Checkout', () => {
 	test( 'inner blocks can be added/removed by filters', async ( {
 		page,
 		editor,
-		editorUtils,
 	} ) => {
 		// Begin by removing the block.
 		await editor.selectBlocks( blockSelectorInEditor );
@@ -222,7 +235,7 @@ test.describe( 'Merchant → Checkout', () => {
 		await removeButton.click();
 		// Expect block to have been removed.
 		await expect(
-			await editorUtils.getBlockByName( blockData.slug )
+			await editor.getBlockByName( blockData.slug )
 		).toHaveCount( 0 );
 
 		// Register a checkout filter to allow `core/table` block in the Checkout block's inner blocks, add
@@ -241,7 +254,7 @@ test.describe( 'Merchant → Checkout', () => {
 
 		await editor.insertBlock( { name: 'woocommerce/checkout' } );
 		await expect(
-			await editorUtils.getBlockByName( blockData.slug )
+			await editor.getBlockByName( blockData.slug )
 		).not.toHaveCount( 0 );
 
 		// Select the checkout-fields-block block and try to insert a block. Check the Table block is available.
@@ -293,14 +306,11 @@ test.describe( 'Merchant → Checkout', () => {
 			await editor.selectBlocks( blockSelectorInEditor );
 		} );
 
-		test( 'can enable dark mode inputs', async ( {
-			editorUtils,
-			page,
-		} ) => {
+		test( 'can enable dark mode inputs', async ( { editor, page } ) => {
 			const toggleLabel = page.getByLabel( 'Dark mode inputs' );
 			await toggleLabel.check();
 
-			const shippingAddressBlock = await editorUtils.getBlockByName(
+			const shippingAddressBlock = await editor.getBlockByName(
 				'woocommerce/checkout'
 			);
 
@@ -320,14 +330,13 @@ test.describe( 'Merchant → Checkout', () => {
 
 			test( 'Company input visibility and optional and required can be toggled', async ( {
 				editor,
-				editorUtils,
 			} ) => {
 				await editor.selectBlocks(
 					blockSelectorInEditor +
 						'  [data-type="woocommerce/checkout-shipping-address-block"]'
 				);
 
-				const shippingAddressBlock = await editorUtils.getBlockByName(
+				const shippingAddressBlock = await editor.getBlockByName(
 					'woocommerce/checkout-shipping-address-block'
 				);
 
@@ -385,7 +394,7 @@ test.describe( 'Merchant → Checkout', () => {
 						'  [data-type="woocommerce/checkout-billing-address-block"]'
 				);
 
-				const billingAddressBlock = await editorUtils.getBlockByName(
+				const billingAddressBlock = await editor.getBlockByName(
 					'woocommerce/checkout-billing-address-block'
 				);
 
@@ -400,57 +409,26 @@ test.describe( 'Merchant → Checkout', () => {
 					}
 				);
 
-				const billingCompanyOptionalToggle = editor.page.locator(
-					'.wc-block-components-require-company-field >> text="Optional"'
-				);
-
-				const billingCompanyRequiredToggle = editor.page.locator(
-					'.wc-block-components-require-company-field >> text="Required"'
-				);
-
-				// Enable the company field.
-				await billingCompanyToggle.check();
-
-				// Verify that the company field is visible.
-				await expect( billingCompanyInput ).toBeVisible();
-
-				// Verify that the company field is currently required.
-				await expect( billingCompanyRequiredToggle ).toBeChecked();
-				await expect( billingCompanyInput ).toHaveAttribute(
-					'required'
-				);
-
-				// Make the company field optional.
-				await billingCompanyOptionalToggle.check();
-
-				// Verify that the company field is optional.
-				await expect( billingCompanyOptionalToggle ).toBeChecked();
-				await expect( billingCompanyInput ).not.toHaveAttribute(
-					'required'
-				);
-
-				// Disable the company field.
-				await billingCompanyToggle.uncheck();
-
-				// Verify that the company field is hidden.
+				// Verify the company field on the billing address has the correct state from the shipping address.
+				await expect( billingCompanyToggle ).not.toBeChecked();
 				await expect( billingCompanyInput ).toBeHidden();
 			} );
 
 			test( 'Apartment input visibility and optional and required can be toggled', async ( {
 				editor,
-				editorUtils,
 			} ) => {
 				await editor.selectBlocks(
 					blockSelectorInEditor +
 						'  [data-type="woocommerce/checkout-shipping-address-block"]'
 				);
 
-				const shippingAddressBlock = await editorUtils.getBlockByName(
+				const shippingAddressBlock = await editor.getBlockByName(
 					'woocommerce/checkout-shipping-address-block'
 				);
 
-				const shippingApartmentInput =
-					shippingAddressBlock.getByLabel( 'Apartment' );
+				const shippingApartmentInput = shippingAddressBlock.getByLabel(
+					'Apartment, suite, etc.'
+				);
 
 				const shippingApartmentLink = shippingAddressBlock.getByRole(
 					'button',
@@ -468,18 +446,18 @@ test.describe( 'Merchant → Checkout', () => {
 				);
 
 				const shippingApartmentOptionalToggle = editor.page.locator(
-					'.wc-block-components-require-apartment-field >> text="Optional"'
+					'.wc-block-components-require-address_2-field >> text="Optional"'
 				);
 
 				const shippingApartmentRequiredToggle = editor.page.locator(
-					'.wc-block-components-require-apartment-field >> text="Required"'
+					'.wc-block-components-require-address_2-field >> text="Required"'
 				);
 
 				// Verify that the apartment link is visible by default.
 				await expect( shippingApartmentLink ).toBeVisible();
 
 				// Verify that the apartment field is hidden by default and the field is optional.
-				await expect( shippingApartmentInput ).toBeHidden();
+				await expect( shippingApartmentInput ).not.toBeInViewport();
 				await expect( shippingApartmentOptionalToggle ).toBeChecked();
 
 				// Make the apartment number required.
@@ -496,7 +474,7 @@ test.describe( 'Merchant → Checkout', () => {
 
 				// Verify that the apartment link and the apartment field are hidden.
 				await expect( shippingApartmentLink ).toBeHidden();
-				await expect( shippingApartmentInput ).toBeHidden();
+				await expect( shippingApartmentInput ).not.toBeInViewport();
 
 				// Display the billing address form.
 				await editor.canvas
@@ -508,12 +486,13 @@ test.describe( 'Merchant → Checkout', () => {
 						'  [data-type="woocommerce/checkout-billing-address-block"]'
 				);
 
-				const billingAddressBlock = await editorUtils.getBlockByName(
+				const billingAddressBlock = await editor.getBlockByName(
 					'woocommerce/checkout-billing-address-block'
 				);
 
-				const billingApartmentInput =
-					billingAddressBlock.getByLabel( 'Apartment' );
+				const billingApartmentInput = billingAddressBlock.getByLabel(
+					'Apartment, suite, etc.'
+				);
 
 				const billingApartmentLink = billingAddressBlock.getByRole(
 					'button',
@@ -530,57 +509,21 @@ test.describe( 'Merchant → Checkout', () => {
 					}
 				);
 
-				const billingApartmentOptionalToggle = editor.page.locator(
-					'.wc-block-components-require-apartment-field >> text="Optional"'
-				);
-
-				const billingApartmentRequiredToggle = editor.page.locator(
-					'.wc-block-components-require-apartment-field >> text="Required"'
-				);
-
-				// Enable the apartment field.
-				await billingApartmentToggle.check();
-
-				// Verify that the apartment link is hidden.
+				// Verify the apartment field on the billing address has the correct state from the shipping address.
+				await expect( billingApartmentToggle ).not.toBeChecked();
 				await expect( billingApartmentLink ).toBeHidden();
-
-				// Verify that the apartment field is visible.
-				await expect( billingApartmentInput ).toBeVisible();
-
-				// Verify that the apartment field is currently required.
-				await expect( billingApartmentRequiredToggle ).toBeChecked();
-				await expect( billingApartmentInput ).toHaveAttribute(
-					'required'
-				);
-
-				// Make the apartment field optional.
-				await billingApartmentOptionalToggle.check();
-
-				// Verify that the apartment link is visible.
-				await expect( billingApartmentLink ).toBeVisible();
-
-				// Verify that the apartment field is hidden and optional.
-				await expect( billingApartmentInput ).toBeHidden();
-				await expect( billingApartmentOptionalToggle ).toBeChecked();
-
-				// Disable the apartment field.
-				await billingApartmentToggle.uncheck();
-
-				// Verify that the apartment link and the apartment field are hidden.
-				await expect( billingApartmentLink ).toBeHidden();
-				await expect( billingApartmentInput ).toBeHidden();
+				await expect( billingApartmentInput ).not.toBeInViewport();
 			} );
 
 			test( 'Phone input visibility and optional and required can be toggled', async ( {
 				editor,
-				editorUtils,
 			} ) => {
 				await editor.selectBlocks(
 					blockSelectorInEditor +
 						'  [data-type="woocommerce/checkout-shipping-address-block"]'
 				);
 
-				const shippingAddressBlock = await editorUtils.getBlockByName(
+				const shippingAddressBlock = await editor.getBlockByName(
 					'woocommerce/checkout-shipping-address-block'
 				);
 
@@ -632,7 +575,7 @@ test.describe( 'Merchant → Checkout', () => {
 						'  [data-type="woocommerce/checkout-billing-address-block"]'
 				);
 
-				const billingAddressBlock = await editorUtils.getBlockByName(
+				const billingAddressBlock = await editor.getBlockByName(
 					'woocommerce/checkout-billing-address-block'
 				);
 
@@ -644,37 +587,8 @@ test.describe( 'Merchant → Checkout', () => {
 					exact: true,
 				} );
 
-				const billingPhoneOptionalToggle = editor.page.locator(
-					'.wc-block-components-require-phone-field >> text="Optional"'
-				);
-
-				const billingPhoneRequiredToggle = editor.page.locator(
-					'.wc-block-components-require-phone-field >> text="Required"'
-				);
-
-				// Enable the phone field.
-				await billingPhoneToggle.check();
-
-				// Verify that the phone field is visible.
-				await expect( billingPhoneInput ).toBeVisible();
-
-				// Verify that the phone field is currently required.
-				await expect( billingPhoneRequiredToggle ).toBeChecked();
-				await expect( billingPhoneInput ).toHaveAttribute( 'required' );
-
-				// Make the phone field optional.
-				await billingPhoneOptionalToggle.check();
-
-				// Verify that the phone field is optional.
-				await expect( billingPhoneOptionalToggle ).toBeChecked();
-				await expect( billingPhoneInput ).not.toHaveAttribute(
-					'required'
-				);
-
-				// Disable the phone field.
-				await billingPhoneToggle.uncheck();
-
-				// Verify that the phone field is hidden.
+				// Verify the phone field on the billing address has the correct state from the shipping address.
+				await expect( billingPhoneToggle ).not.toBeChecked();
 				await expect( billingPhoneInput ).toBeHidden();
 			} );
 		} );
@@ -688,7 +602,6 @@ test.describe( 'Merchant → Checkout', () => {
 
 		test( 'Return to cart link is visible and can be toggled', async ( {
 			editor,
-			editorUtils,
 		} ) => {
 			await editor.selectBlocks(
 				`${ blockSelectorInEditor } .wp-block-woocommerce-checkout-actions-block`
@@ -700,7 +613,7 @@ test.describe( 'Merchant → Checkout', () => {
 				{ exact: true }
 			);
 			await returnToCartLinkToggle.check();
-			const shippingAddressBlock = await editorUtils.getBlockByName(
+			const shippingAddressBlock = await editor.getBlockByName(
 				'woocommerce/checkout-actions-block'
 			);
 

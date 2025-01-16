@@ -5,8 +5,11 @@
 
 namespace Automattic\WooCommerce\Admin;
 
-use Automattic\WooCommerce\Admin\Features\Navigation\Screen;
 use Automattic\WooCommerce\Internal\Admin\Loader;
+use WC_Gateway_BACS;
+use WC_Gateway_Cheque;
+use WC_Gateway_COD;
+use WC_Gateway_Paypal;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -220,7 +223,7 @@ class PageController {
 	 */
 	public function get_current_page() {
 		// If 'current_screen' hasn't fired yet, the current page calculation
-		// will fail which causes `false` to be returned for all subsquent calls.
+		// will fail which causes `false` to be returned for all subsequent calls.
 		if ( ! did_action( 'current_screen' ) ) {
 			_doing_it_wrong( __FUNCTION__, esc_html__( 'Current page retrieval should be called on or after the `current_screen` hook.', 'woocommerce' ), '0.16.0' );
 		}
@@ -297,7 +300,7 @@ class PageController {
 			array(
 				'products'          => array( '', 'inventory', 'downloadable' ),
 				'shipping'          => array( '', 'options', 'classes' ),
-				'checkout'          => array( 'bacs', 'cheque', 'cod', 'paypal' ),
+				'checkout'          => array( WC_Gateway_BACS::ID, WC_Gateway_Cheque::ID, WC_Gateway_COD::ID, WC_Gateway_Paypal::ID ),
 				'email'             => $wc_email_ids,
 				'advanced'          => array(
 					'',
@@ -394,7 +397,7 @@ class PageController {
 	}
 
 	/**
-	 * Returns true if we are on a page registed with this controller.
+	 * Returns true if we are on a page registered with this controller.
 	 *
 	 * @return boolean
 	 */
@@ -530,7 +533,7 @@ class PageController {
 	 */
 	public function remove_app_entry_page_menu_item() {
 		global $submenu;
-		// User does not have capabilites to see the submenu.
+		// User does not have capabilities to see the submenu.
 		if ( ! current_user_can( 'manage_woocommerce' ) || empty( $submenu['woocommerce'] ) ) {
 			return;
 		}
@@ -574,6 +577,6 @@ class PageController {
 	 * TODO: See usage in `admin.php`. This needs refactored and implemented properly in core.
 	 */
 	public static function is_embed_page() {
-		return wc_admin_is_connected_page() || ( ! self::is_admin_page() && class_exists( 'Automattic\WooCommerce\Admin\Features\Navigation\Screen' ) && Screen::is_woocommerce_page() );
+		return wc_admin_is_connected_page();
 	}
 }

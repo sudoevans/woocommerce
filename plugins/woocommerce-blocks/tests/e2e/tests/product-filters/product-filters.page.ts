@@ -2,29 +2,25 @@
  * External dependencies
  */
 import { Page } from '@playwright/test';
-import { EditorUtils, FrontendUtils } from '@woocommerce/e2e-utils';
-import { Editor } from '@wordpress/e2e-test-utils-playwright';
+import { Editor, FrontendUtils } from '@woocommerce/e2e-utils';
 
 export class ProductFiltersPage {
 	editor: Editor;
 	page: Page;
 	frontendUtils: FrontendUtils;
-	editorUtils: EditorUtils;
 	constructor( {
 		editor,
 		page,
 		frontendUtils,
-		editorUtils,
 	}: {
 		editor: Editor;
 		page: Page;
 		frontendUtils: FrontendUtils;
-		editorUtils: EditorUtils;
 	} ) {
 		this.editor = editor;
 		this.page = page;
 		this.frontendUtils = frontendUtils;
-		this.editorUtils = editorUtils;
+		this.editor = editor;
 	}
 
 	async addProductFiltersBlock( { cleanContent = true } ) {
@@ -45,6 +41,42 @@ export class ProductFiltersPage {
 				has: this.page.locator( ':visible' ),
 			} );
 		}
-		return this.editorUtils.getBlockByName( blockName );
+		return this.editor.getBlockByName( blockName );
+	}
+
+	async getProductFiltersOverlayNavigationBlock( {
+		page,
+	}: {
+		page: 'frontend' | 'editor';
+	} ) {
+		const blockName = 'woocommerce/product-filters-overlay-navigation';
+		if ( page === 'frontend' ) {
+			return (
+				await this.frontendUtils.getBlockByName( blockName )
+			 ).filter( {
+				has: this.page.locator( ':visible' ),
+			} );
+		}
+		return this.editor.canvas.getByLabel(
+			'Block: Overlay Navigation (Experimental)'
+		);
+	}
+
+	async selectOverlayMode( {
+		mode,
+	}: {
+		mode: 'mobile' | 'always' | 'never';
+	} ) {
+		switch ( mode ) {
+			case 'always':
+				await this.page.getByLabel( 'Always' ).click();
+				break;
+			case 'mobile':
+				await this.page.getByLabel( 'Mobile' ).click();
+				break;
+			case 'never':
+				await this.page.getByLabel( 'Never' ).click();
+				break;
+		}
 	}
 }

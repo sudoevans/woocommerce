@@ -1,8 +1,7 @@
 /**
  * External dependencies
  */
-import { test, expect } from '@woocommerce/e2e-playwright-utils';
-import type { FrontendUtils } from '@woocommerce/e2e-utils';
+import { test, expect, FrontendUtils } from '@woocommerce/e2e-utils';
 
 // Instead of testing the block individually, we test the Cart and Checkout
 // templates, which make use of the block.
@@ -41,7 +40,7 @@ for ( const template of templates ) {
 		test( `the content of the ${ template.title } page is correctly rendered in the ${ template.title } template`, async ( {
 			page,
 			admin,
-			editorUtils,
+			editor,
 			frontendUtils,
 			requestUtils,
 		} ) => {
@@ -55,15 +54,22 @@ for ( const template of templates ) {
 			// Prevent trying to insert the paragraph block before the editor is
 			// ready.
 			await expect(
-				page.locator( template.blockClassName )
+				editor.canvas.locator( template.blockClassName )
 			).toBeVisible();
 
-			await editorUtils.editor.insertBlock( {
+			await editor.insertBlock( {
 				name: 'core/paragraph',
 				attributes: { content: userText },
 			} );
 
-			await editorUtils.updatePost();
+			await page
+				.getByRole( 'button', { name: 'Save', exact: true } )
+				.click();
+
+			await page
+				.getByRole( 'button', { name: 'Dismiss this notice' } )
+				.filter( { hasText: 'updated' } )
+				.waitFor();
 
 			// Verify edits are in the template when viewed from the frontend.
 			await template.visitPage( { frontendUtils } );

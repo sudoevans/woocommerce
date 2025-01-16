@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { useBlockProps } from '@wordpress/block-editor';
 import { useCheckoutAddress } from '@woocommerce/base-context/hooks';
 import { innerBlockAreas } from '@woocommerce/blocks-checkout';
@@ -14,15 +14,12 @@ import {
 	AdditionalFields,
 	AdditionalFieldsContent,
 } from '../../form-step';
-import {
-	useCheckoutBlockContext,
-	useCheckoutBlockControlsContext,
-} from '../../context';
 import Block from './block';
 import {
 	getBillingAddresssBlockTitle,
 	getBillingAddresssBlockDescription,
 } from './utils';
+import { AddressFieldControls } from '../../address-field-controls';
 
 export const Edit = ( {
 	attributes,
@@ -36,16 +33,6 @@ export const Edit = ( {
 	};
 	setAttributes: ( attributes: BlockAttributes ) => void;
 } ): JSX.Element | null => {
-	const {
-		showCompanyField,
-		requireCompanyField,
-		showApartmentField,
-		requireApartmentField,
-		showPhoneField,
-		requirePhoneField,
-	} = useCheckoutBlockContext();
-	const { addressFieldControls: Controls } =
-		useCheckoutBlockControlsContext();
 	const { showBillingFields, forcedBillingAddress, useBillingAsShipping } =
 		useCheckoutAddress();
 
@@ -61,30 +48,17 @@ export const Edit = ( {
 		forcedBillingAddress
 	);
 
-	// This is needed to force the block to re-render when the requireApartmentField changes.
-	const blockKey = `billing-address-${
-		requireApartmentField ? 'visible' : 'hidden'
-	}-address-2`;
-
 	return (
 		<FormStepBlock
 			setAttributes={ setAttributes }
 			attributes={ attributes }
-			className={ classnames(
+			className={ clsx(
 				'wc-block-checkout__billing-fields',
 				attributes?.className
 			) }
 		>
-			<Controls />
-			<Block
-				key={ blockKey }
-				showCompanyField={ showCompanyField }
-				requireCompanyField={ requireCompanyField }
-				showApartmentField={ showApartmentField }
-				requireApartmentField={ requireApartmentField }
-				showPhoneField={ showPhoneField }
-				requirePhoneField={ requirePhoneField }
-			/>
+			<AddressFieldControls />
+			<Block />
 			<AdditionalFields block={ innerBlockAreas.BILLING_ADDRESS } />
 		</FormStepBlock>
 	);

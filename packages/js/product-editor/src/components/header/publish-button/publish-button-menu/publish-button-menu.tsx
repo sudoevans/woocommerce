@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { Dropdown, MenuGroup, MenuItem } from '@wordpress/components';
+import { MenuGroup, MenuItem } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
 import { useDispatch } from '@wordpress/data';
 import { createElement, Fragment, useState } from '@wordpress/element';
@@ -17,7 +17,7 @@ import { recordEvent } from '@woocommerce/tracks';
 import { useProductManager } from '../../../../hooks/use-product-manager';
 import { useProductScheduled } from '../../../../hooks/use-product-scheduled';
 import { recordProductEvent } from '../../../../utils/record-product-event';
-import { getProductErrorMessage } from '../../../../utils/get-product-error-message';
+import { useErrorHandler } from '../../../../hooks/use-error-handler';
 import { ButtonWithDropdownMenu } from '../../../button-with-dropdown-menu';
 import { SchedulePublishModal } from '../../../schedule-publish-modal';
 import { showSuccessNotice } from '../utils';
@@ -26,6 +26,7 @@ import { TRACKS_SOURCE } from '../../../../constants';
 
 export function PublishButtonMenu( {
 	postType,
+	visibleTab = 'general',
 	...props
 }: PublishButtonMenuProps ) {
 	const { isScheduling, isScheduled, schedule, date, formattedDate } =
@@ -41,6 +42,7 @@ export function PublishButtonMenu( {
 		postType,
 		'status'
 	);
+	const { getProductErrorMessageAndProps } = useErrorHandler();
 
 	function scheduleProduct( dateString?: string ) {
 		schedule( dateString )
@@ -49,9 +51,10 @@ export function PublishButtonMenu( {
 
 				showSuccessNotice( scheduledProduct );
 			} )
-			.catch( ( error ) => {
-				const message = getProductErrorMessage( error );
-				createErrorNotice( message );
+			.catch( async ( error ) => {
+				const { message, errorProps } =
+					await getProductErrorMessageAndProps( error, visibleTab );
+				createErrorNotice( message, errorProps );
 			} )
 			.finally( () => {
 				setShowScheduleModal( undefined );
@@ -72,7 +75,7 @@ export function PublishButtonMenu( {
 		);
 	}
 
-	function renderMenu( { onClose }: Dropdown.RenderProps ) {
+	function renderMenu( { onClose }: { onClose?: () => void } ) {
 		return (
 			<>
 				<MenuGroup>
@@ -81,7 +84,9 @@ export function PublishButtonMenu( {
 							<MenuItem
 								onClick={ () => {
 									scheduleProduct();
-									onClose();
+									if ( onClose ) {
+										onClose();
+									}
 								} }
 							>
 								{ __( 'Publish now', 'woocommerce' ) }
@@ -90,7 +95,9 @@ export function PublishButtonMenu( {
 								info={ formattedDate }
 								onClick={ () => {
 									setShowScheduleModal( 'edit' );
-									onClose();
+									if ( onClose ) {
+										onClose();
+									}
 								} }
 							>
 								{ __( 'Edit schedule', 'woocommerce' ) }
@@ -103,7 +110,9 @@ export function PublishButtonMenu( {
 									source: TRACKS_SOURCE,
 								} );
 								setShowScheduleModal( 'schedule' );
-								onClose();
+								if ( onClose ) {
+									onClose();
+								}
 							} }
 						>
 							{ __( 'Schedule publish', 'woocommerce' ) }
@@ -133,12 +142,20 @@ export function PublishButtonMenu( {
 										);
 										navigateTo( { url } );
 									} )
-									.catch( ( error ) => {
-										const message =
-											getProductErrorMessage( error );
-										createErrorNotice( message );
+									.catch( async ( error ) => {
+										const { message, errorProps } =
+											await getProductErrorMessageAndProps(
+												error,
+												visibleTab
+											);
+										createErrorNotice(
+											message,
+											errorProps
+										);
 									} );
-								onClose();
+								if ( onClose ) {
+									onClose();
+								}
 							} }
 						>
 							{ __( 'Copy to a new draft', 'woocommerce' ) }
@@ -165,12 +182,20 @@ export function PublishButtonMenu( {
 											url: productListUrl,
 										} );
 									} )
-									.catch( ( error ) => {
-										const message =
-											getProductErrorMessage( error );
-										createErrorNotice( message );
+									.catch( async ( error ) => {
+										const { message, errorProps } =
+											await getProductErrorMessageAndProps(
+												error,
+												visibleTab
+											);
+										createErrorNotice(
+											message,
+											errorProps
+										);
 									} );
-								onClose();
+								if ( onClose ) {
+									onClose();
+								}
 							} }
 						>
 							{ __( 'Move to trash', 'woocommerce' ) }
@@ -185,7 +210,7 @@ export function PublishButtonMenu( {
 		<>
 			<ButtonWithDropdownMenu
 				{ ...props }
-				onToggle={ ( isOpen: boolean ) => {
+				onToggle={ ( isOpen ) => {
 					if ( isOpen ) {
 						recordEvent( 'product_publish_dropdown_open', {
 							source: TRACKS_SOURCE,

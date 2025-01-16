@@ -1,6 +1,13 @@
+/**
+ * Internal dependencies
+ */
 const { test, expect } = require( '@playwright/test' );
+const { setComingSoon } = require( '../../utils/coming-soon' );
 
 test.describe( 'Customer-role users are blocked from accessing the WP Dashboard.', () => {
+	test.beforeAll( async ( { baseURL } ) => {
+		await setComingSoon( { baseURL, enabled: 'no' } );
+	} );
 	test.use( { storageState: process.env.CUSTOMERSTATE } );
 
 	const dashboardScreens = {

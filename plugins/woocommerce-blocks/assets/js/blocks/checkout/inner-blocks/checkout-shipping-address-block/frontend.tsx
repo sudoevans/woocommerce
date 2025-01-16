@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { withFilteredAttributes } from '@woocommerce/shared-hocs';
 import { FormStep } from '@woocommerce/blocks-components';
 import { useCheckoutAddress } from '@woocommerce/base-context/hooks';
@@ -29,15 +29,7 @@ const FrontendBlock = ( {
 		select( CHECKOUT_STORE_KEY ).isProcessing()
 	);
 	const { showShippingFields } = useCheckoutAddress();
-	const {
-		showCompanyField,
-		requireCompanyField,
-		showApartmentField,
-		requireApartmentField,
-		showPhoneField,
-		requirePhoneField,
-		showFormStepNumbers,
-	} = useCheckoutBlockContext();
+	const { showFormStepNumbers } = useCheckoutBlockContext();
 
 	if ( ! showShippingFields ) {
 		return null;
@@ -47,7 +39,7 @@ const FrontendBlock = ( {
 		<FormStep
 			id="shipping-fields"
 			disabled={ checkoutIsProcessing }
-			className={ classnames(
+			className={ clsx(
 				'wc-block-checkout__shipping-fields',
 				className
 			) }
@@ -55,14 +47,7 @@ const FrontendBlock = ( {
 			description={ description }
 			showStepNumber={ showFormStepNumbers }
 		>
-			<Block
-				showCompanyField={ showCompanyField }
-				requireCompanyField={ requireCompanyField }
-				showApartmentField={ showApartmentField }
-				requireApartmentField={ requireApartmentField }
-				showPhoneField={ showPhoneField }
-				requirePhoneField={ requirePhoneField }
-			/>
+			<Block />
 			{ children }
 		</FormStep>
 	);

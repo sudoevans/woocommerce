@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { withFilteredAttributes } from '@woocommerce/shared-hocs';
 import { FormStep } from '@woocommerce/blocks-components';
 import { useCheckoutAddress } from '@woocommerce/base-context/hooks';
@@ -23,12 +23,6 @@ const FrontendBlock = ( {
 }: {
 	title: string;
 	description: string;
-	showCompanyField: boolean;
-	requireCompanyField: boolean;
-	showApartmentField: boolean;
-	requireApartmentField: boolean;
-	showPhoneField: boolean;
-	requirePhoneField: boolean;
 	children: JSX.Element;
 	className?: string;
 } ) => {
@@ -46,7 +40,7 @@ const FrontendBlock = ( {
 		<FormStep
 			id="shipping-option"
 			disabled={ checkoutIsProcessing }
-			className={ classnames(
+			className={ clsx(
 				'wc-block-checkout__shipping-option',
 				className
 			) }

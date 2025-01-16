@@ -2,6 +2,7 @@ const { test } = require( '../../../../fixtures/block-editor-fixtures' );
 const { expect } = require( '@playwright/test' );
 
 const { clickOnTab } = require( '../../../../utils/simple-products' );
+const { tags } = require( '../../../../fixtures/fixtures' );
 
 const NEW_EDITOR_ADD_PRODUCT_URL =
 	'wp-admin/admin.php?page=wc-admin&path=%2Fadd-product';
@@ -21,7 +22,7 @@ const tagName = `my-tag-${ new Date().getTime().toString() }`;
 
 test.describe.configure( { mode: 'serial' } );
 
-test.describe( 'General tab', () => {
+test.describe( 'General tab', { tag: tags.GUTENBERG }, () => {
 	test.describe( 'Create product - Organization tab', () => {
 		let productId;
 
@@ -38,12 +39,6 @@ test.describe( 'General tab', () => {
 			await page
 				.getByPlaceholder( 'e.g. 12 oz Coffee Mug' )
 				.fill( productData.name );
-			await page
-				.locator(
-					'[data-template-block-id="basic-details"] .components-summary-control'
-				)
-				.last()
-				.fill( productData.summary );
 
 			const regularPrice = page
 				.locator( 'input[name="regular_price"]' )
@@ -59,11 +54,16 @@ test.describe( 'General tab', () => {
 			await salePrice.click();
 			await salePrice.fill( productData.salePrice );
 
+			await page
+				.locator(
+					'[data-template-block-id="basic-details"] .components-summary-control'
+				)
+				.last()
+				.fill( productData.summary );
+
 			await clickOnTab( 'Organization', page );
 
-			await page
-				.locator( '[id^="woocommerce-taxonomy-select-"]' )
-				.click();
+			await page.getByLabel( 'Categories' ).click();
 
 			await page.locator( 'text=Create new' ).click();
 
@@ -79,7 +79,7 @@ test.describe( 'General tab', () => {
 				} )
 				.click();
 
-			await page.locator( '[id^="tag-field-"]' ).click();
+			await page.getByLabel( 'Tags' ).click();
 
 			await page.locator( 'text=Create new' ).click();
 
@@ -127,7 +127,7 @@ test.describe( 'General tab', () => {
 			await expect( productId ).toBeDefined();
 			await expect( title ).toHaveText( productData.name );
 
-			await page.goto( `/?post_type=product&p=${ productId }` );
+			await page.goto( `?post_type=product&p=${ productId }` );
 
 			await page
 				.locator( 'input[name="post_password"]' )
@@ -136,7 +136,10 @@ test.describe( 'General tab', () => {
 			await page.getByRole( 'button', { name: 'Enter' } ).click();
 
 			await expect(
-				page.getByRole( 'heading', { name: productData.name } )
+				page.getByRole( 'heading', {
+					name: productData.name,
+					level: 1,
+				} )
 			).toBeVisible();
 
 			await expect(

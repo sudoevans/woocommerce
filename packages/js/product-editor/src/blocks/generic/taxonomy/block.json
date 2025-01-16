@@ -1,6 +1,6 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
-	"apiVersion": 2,
+	"apiVersion": 3,
 	"name": "woocommerce/product-taxonomy-field",
 	"title": "Taxonomy",
 	"category": "widgets",
@@ -32,7 +32,7 @@
 			"type": "string",
 			"__experimentalRole": "content"
 		},
-		"placeholder": {
+		"help": {
 			"type": "string",
 			"__experimentalRole": "content"
 		}

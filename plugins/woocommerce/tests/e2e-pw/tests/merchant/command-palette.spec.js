@@ -1,5 +1,9 @@
 const { test: baseTest, expect } = require( '../../fixtures/fixtures' );
-const { disableWelcomeModal } = require( '../../utils/editor' );
+
+/**
+ * External dependencies
+ */
+import { disableWelcomeModal } from '@woocommerce/e2e-utils-playwright';
 
 // need to figure out whether tests are being run on a mac
 const macOS = process.platform === 'darwin';
@@ -9,9 +13,11 @@ const clickOnCommandPaletteOption = async ( { page, optionName } ) => {
 	// Press `Ctrl` + `K` to open the command palette.
 	await page.keyboard.press( cmdKeyCombo );
 
+	// Using a regex here because Gutenberg changes the text of the placeholder
 	await page
-		.getByLabel( 'Command palette' )
-		.locator( 'input' )
+		.getByPlaceholder(
+			/Search (?:commands(?: and settings)?|for commands)/
+		)
 		.fill( optionName );
 
 	// Click on the relevant option.

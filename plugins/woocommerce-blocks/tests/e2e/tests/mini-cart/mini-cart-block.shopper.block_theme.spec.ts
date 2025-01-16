@@ -1,19 +1,21 @@
 /**
  * External dependencies
  */
-import { expect, test } from '@woocommerce/e2e-playwright-utils';
-import { cli } from '@woocommerce/e2e-utils';
+import { expect, test, wpCLI } from '@woocommerce/e2e-utils';
 
 /**
  * Internal dependencies
  */
-import { REGULAR_PRICED_PRODUCT_NAME } from '../checkout/constants';
+import {
+	REGULAR_PRICED_PRODUCT_NAME,
+	SIMPLE_PHYSICAL_PRODUCT_NAME,
+} from '../checkout/constants';
+import { getTestTranslation } from '../../utils/get-test-translation';
+import { translations } from '../../test-data/data/data';
 
 test.describe( 'Shopper → Translations', () => {
 	test.beforeEach( async () => {
-		await cli(
-			`npm run wp-env run tests-cli -- wp site switch-language nl_NL`
-		);
+		await wpCLI( `site switch-language ${ translations.locale }` );
 	} );
 
 	test( 'User can see translation in empty Mini-Cart', async ( {
@@ -21,15 +23,14 @@ test.describe( 'Shopper → Translations', () => {
 		frontendUtils,
 		miniCartUtils,
 	} ) => {
+		await frontendUtils.emptyCart();
 		await frontendUtils.goToShop();
 		await miniCartUtils.openMiniCart();
 
 		await expect(
-			page.getByText( 'Je winkelwagen is momenteel leeg!' )
-		).toBeVisible();
-
-		await expect(
-			page.getByRole( 'link', { name: 'Begin met winkelen' } )
+			page.getByRole( 'link', {
+				name: getTestTranslation( 'Start shopping' ),
+			} )
 		).toBeVisible();
 	} );
 
@@ -38,38 +39,42 @@ test.describe( 'Shopper → Translations', () => {
 		frontendUtils,
 		miniCartUtils,
 	} ) => {
+		await frontendUtils.emptyCart();
 		await frontendUtils.goToShop();
-		await page.getByLabel( 'Toevoegen aan winkelwagen: “Beanie“' ).click();
+		await frontendUtils.addToCart( SIMPLE_PHYSICAL_PRODUCT_NAME );
 		await miniCartUtils.openMiniCart();
 
 		await expect(
-			page.getByRole( 'heading', { name: 'Je winkelwagen (1 artikel)' } )
+			page.getByRole( 'heading', {
+				name: getTestTranslation( 'Your cart' ),
+			} )
 		).toBeVisible();
 
 		await expect(
-			page.getByRole( 'link', { name: 'Mijn winkelmand bekijken' } )
+			page.getByRole( 'link', {
+				name: getTestTranslation( 'View my cart' ),
+			} )
 		).toBeVisible();
 
 		await expect(
-			page.getByRole( 'link', { name: 'Naar afrekenen' } )
+			page.getByRole( 'link', {
+				name: getTestTranslation( 'Go to checkout' ),
+			} )
 		).toBeVisible();
 	} );
 } );
 
 test.describe( 'Shopper → Tax', () => {
 	test.beforeEach( async () => {
-		await cli(
-			`npm run wp-env run tests-cli -- wp option set woocommerce_prices_include_tax no`
-		);
-		await cli(
-			`npm run wp-env run tests-cli -- wp option set woocommerce_tax_display_cart incl`
-		);
+		await wpCLI( 'option set woocommerce_prices_include_tax no' );
+		await wpCLI( 'option set woocommerce_tax_display_cart incl' );
 	} );
 
 	test( 'User can see tax label and price including tax', async ( {
 		frontendUtils,
 		page,
 	} ) => {
+		await frontendUtils.emptyCart();
 		await frontendUtils.goToShop();
 		await frontendUtils.addToCart( REGULAR_PRICED_PRODUCT_NAME );
 		await frontendUtils.goToMiniCart();
@@ -89,12 +94,8 @@ test.describe( 'Shopper → Tax', () => {
 			page.getByTestId( 'mini-cart' ).getByLabel( '1 item in cart' )
 		).toContainText( '(incl. tax)' );
 
-		await cli(
-			`npm run wp-env run tests-cli -- wp option set woocommerce_prices_include_tax yes`
-		);
-		await cli(
-			`npm run wp-env run tests-cli -- wp option set woocommerce_tax_display_cart excl`
-		);
+		await wpCLI( 'option set woocommerce_prices_include_tax yes' );
+		await wpCLI( 'option set woocommerce_tax_display_cart excl' );
 		await page.reload();
 
 		await expect(

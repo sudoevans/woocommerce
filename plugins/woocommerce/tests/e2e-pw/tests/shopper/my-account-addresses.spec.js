@@ -1,6 +1,9 @@
+/**
+ * Internal dependencies
+ */
 const { test, expect } = require( '@playwright/test' );
 const wcApi = require( '@woocommerce/woocommerce-rest-api' ).default;
-
+const { setComingSoon } = require( '../../utils/coming-soon' );
 const randomNum = new Date().getTime().toString();
 const customer = {
 	username: `customer${ randomNum }`,
@@ -10,6 +13,7 @@ const customer = {
 
 test.describe( 'Customer can manage addresses in My Account > Addresses page', () => {
 	test.beforeAll( async ( { baseURL } ) => {
+		await setComingSoon( { baseURL, enabled: 'no' } );
 		const api = new wcApi( {
 			url: baseURL,
 			consumerKey: process.env.CONSUMER_KEY,
@@ -108,7 +112,6 @@ test.describe( 'Customer can manage addresses in My Account > Addresses page', (
 		await page.locator( '#shipping_country' ).selectOption( 'US' );
 		await page.locator( '#shipping_state' ).selectOption( 'NY' );
 		await page.locator( '#shipping_postcode' ).fill( '10010' );
-		await page.locator( '#shipping_phone' ).fill( '555 555-5555' );
 		await page.locator( 'text=Save address' ).click();
 
 		// verify shipping address has been applied

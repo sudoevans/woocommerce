@@ -10,13 +10,6 @@ const users = [
 		last_name: `the ${ now }th`,
 		role: 'Customer',
 	},
-	{
-		username: `manager.${ now }`,
-		email: `manager.${ now }@example.com`,
-		first_name: `Manager`,
-		last_name: `the ${ now }th`,
-		role: 'Shop manager',
-	},
 ];
 
 const test = baseTest.extend( {
@@ -72,7 +65,10 @@ for ( const userData of users ) {
 
 		await test.step( 'verify you can access the new user edit page', async () => {
 			await page
-				.getByRole( 'link', { name: userData.username, exact: true } )
+				.getByRole( 'link', {
+					name: userData.username,
+					exact: true,
+				} )
 				.click();
 
 			await expect( page ).toHaveTitle( /Edit User/ );
@@ -80,7 +76,11 @@ for ( const userData of users ) {
 
 		await test.step( 'verify the new user can login', async () => {
 			await page.context().clearCookies();
-			await page.goto( '/wp-admin' );
+			await page.goto( 'wp-login.php' );
+			await expect(
+				page.getByLabel( 'Username or Email Address' )
+			).toBeVisible();
+
 			await logIn( page, userData.username, user.password, false );
 
 			const expectedTitle =
