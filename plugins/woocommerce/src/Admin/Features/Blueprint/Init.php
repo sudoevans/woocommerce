@@ -6,7 +6,13 @@ namespace Automattic\WooCommerce\Admin\Features\Blueprint;
 
 use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCCoreProfilerOptions;
 use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCPaymentGateways;
-use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettings;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsAccount;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsAdvanced;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsEmails;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsGeneral;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsIntegrations;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsProducts;
+use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCSettingsSiteVisibility;
 use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCShipping;
 use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCTaskOptions;
 use Automattic\WooCommerce\Admin\Features\Blueprint\Exporters\ExportWCTaxRates;
@@ -67,12 +73,16 @@ class Init {
 	 */
 	public function get_woo_exporters() {
 		$classnames = array(
-			ExportWCCoreProfilerOptions::class,
-			ExportWCSettings::class,
-			ExportWCPaymentGateways::class,
-			ExportWCShipping::class,
-			ExportWCTaskOptions::class,
+			ExportWCSettingsGeneral::class,
+			ExportWCSettingsProducts::class,
 			ExportWCTaxRates::class,
+			ExportWCShipping::class,
+			ExportWCPaymentGateways::class,
+			ExportWCSettingsAccount::class,
+			ExportWCSettingsEmails::class,
+			ExportWCSettingsIntegrations::class,
+			ExportWCSettingsSiteVisibility::class,
+			ExportWCSettingsAdvanced::class,
 		);
 
 		$exporters = array();
@@ -106,6 +116,10 @@ class Init {
 	 * @return array
 	 */
 	public function get_step_groups_for_js() {
+		$all_plugins    = $this->wp_get_plugins();
+		$active_plugins = array_intersect_key( $all_plugins, array_flip( get_option( 'active_plugins', array() ) ) );
+		$active_theme   = $this->wp_get_theme();
+
 		return array(
 			array(
 				'id'          => 'settings',
@@ -135,8 +149,8 @@ class Init {
 							'label' => $plugin['Name'],
 						);
 					},
-					array_keys( $this->wp_get_plugins() ),
-					$this->wp_get_plugins()
+					array_keys( $active_plugins ),
+					$active_plugins
 				),
 			),
 			array(
@@ -144,15 +158,11 @@ class Init {
 				'description' => __( 'It includes all the installed themes.', 'woocommerce' ),
 				'label'       => __( 'Themes', 'woocommerce' ),
 				'icon'        => 'brush',
-				'items'       => array_map(
-					function ( $key, $theme ) {
-						return array(
-							'id'    => $key,
-							'label' => $theme['Name'],
-						);
-					},
-					array_keys( $this->wp_get_themes() ),
-					$this->wp_get_themes()
+				'items'       => array(
+					array(
+						'id'    => $active_theme->get_stylesheet(),
+						'label' => $active_theme->get( 'Name' ),
+					),
 				),
 			),
 		);

@@ -83,6 +83,6 @@ class ExportWCPaymentGateways implements StepExporter {
 	 * @return string
 	 */
 	public function get_description() {
-		return __( 'It includes payment gateways and their settings.', 'woocommerce' );
+		return __( 'It includes all settings in WooCommerce | Settings | Payments.', 'woocommerce' );
 	}
 }

@@ -71,12 +71,12 @@ class ExportWCShipping implements StepExporter, HasAlias {
 		);
 
 		$classes_steps = array_map(
-			fn( $class_row ) => new RunSql( Util::array_to_insert_sql( $class_row, $wpdb->prefix . 'term_taxonomy' ) ),
+			fn( $class_row ) => new RunSql( Util::array_to_insert_sql( $class_row, $wpdb->prefix . 'term_taxonomy', 'replace into' ) ),
 			$classes
 		);
 
 		$terms = array_map(
-			fn( $term ) => new RunSql( Util::array_to_insert_sql( $term, $wpdb->prefix . 'terms' ) ),
+			fn( $term ) => new RunSql( Util::array_to_insert_sql( $term, $wpdb->prefix . 'terms', 'replace into' ) ),
 			$this->get_terms( $classes )
 		);
 
@@ -107,7 +107,7 @@ class ExportWCShipping implements StepExporter, HasAlias {
 	 * @return string
 	 */
 	public function get_description(): string {
-		return __( 'It includes shipping settings', 'woocommerce' );
+		return __( 'It includes all settings in WooCommerce | Settings | Shipping.', 'woocommerce' );
 	}
 
 	/**
@@ -128,7 +128,7 @@ class ExportWCShipping implements StepExporter, HasAlias {
 		global $wpdb;
 
 		return array_map(
-			fn( $zone ) => new RunSql( Util::array_to_insert_sql( $zone, $wpdb->prefix . 'woocommerce_shipping_zones' ) ),
+			fn( $zone ) => new RunSql( Util::array_to_insert_sql( $zone, $wpdb->prefix . 'woocommerce_shipping_zones', 'replace into' ) ),
 			$wpdb->get_results( "SELECT * FROM {$wpdb->prefix}woocommerce_shipping_zones", ARRAY_A )
 		);
 	}
@@ -142,7 +142,7 @@ class ExportWCShipping implements StepExporter, HasAlias {
 		global $wpdb;
 
 		return array_map(
-			fn( $location ) => new RunSql( Util::array_to_insert_sql( $location, $wpdb->prefix . 'woocommerce_shipping_zone_locations' ) ),
+			fn( $location ) => new RunSql( Util::array_to_insert_sql( $location, $wpdb->prefix . 'woocommerce_shipping_zone_locations', 'replace into' ) ),
 			$wpdb->get_results( "SELECT * FROM {$wpdb->prefix}woocommerce_shipping_zone_locations", ARRAY_A )
 		);
 	}
@@ -164,11 +164,11 @@ class ExportWCShipping implements StepExporter, HasAlias {
 
 		return array_merge(
 			array_map(
-				fn( $method ) => new RunSql( Util::array_to_insert_sql( $method, $wpdb->prefix . 'woocommerce_shipping_zone_methods' ) ),
+				fn( $method ) => new RunSql( Util::array_to_insert_sql( $method, $wpdb->prefix . 'woocommerce_shipping_zone_methods', 'replace into' ) ),
 				$methods
 			),
 			array_map(
-				fn( $option ) => new RunSql( Util::array_to_insert_sql( $option, $wpdb->prefix . 'options' ) ),
+				fn( $option ) => new RunSql( Util::array_to_insert_sql( $option, $wpdb->prefix . 'options', 'replace into' ) ),
 				$method_options
 			)
 		);

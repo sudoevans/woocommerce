@@ -28,7 +28,7 @@ export const OverwriteConfirmationModal: React.FC<
 		>
 			<p className="woocommerce-blueprint-overwrite-modal__description">
 				{ __(
-					'Importing the file will overwrite the current configuration for the following items in WooCommerce Settings:',
+					'Importing the file will overwrite the current configuration in WooCommerce Settings.',
 					'woocommerce'
 				) }
 			</p>

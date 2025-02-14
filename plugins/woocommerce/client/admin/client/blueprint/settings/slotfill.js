@@ -85,6 +85,7 @@ const Blueprint = () => {
 				link.setAttribute( 'download', 'woo-blueprint.json' );
 			}
 
+			linkContainer.appendChild( document.createElement( 'br' ) );
 			linkContainer.appendChild( link );
 
 			link.click();
