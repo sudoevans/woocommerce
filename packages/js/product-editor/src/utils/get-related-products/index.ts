@@ -110,12 +110,14 @@ export async function getSuggestedProductsFor( {
 	};
 
 	if ( forceRequest ) {
+		// @ts-expect-error Todo: awaiting more global fix, demo: https://github.com/woocommerce/woocommerce/pull/54146
 		await dispatch( PRODUCTS_STORE_NAME ).invalidateResolution(
 			'getSuggestedProducts',
 			[ options ]
 		);
 	}
 
+	// @ts-expect-error TODO react-18-upgrade: getSuggestedProducts type is not correctly typed and was surfaced by https://github.com/woocommerce/woocommerce/pull/54146
 	return await resolveSelect( PRODUCTS_STORE_NAME ).getSuggestedProducts(
 		options
 	);

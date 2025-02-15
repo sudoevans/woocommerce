@@ -34,7 +34,12 @@ type ServerErrorResponse = {
 	code: string;
 };
 
-export const DEFAULT_SHIPPING_CLASS_OPTIONS: SelectControl.Option[] = [
+type Select = {
+	label: string;
+	value: string;
+};
+
+export const DEFAULT_SHIPPING_CLASS_OPTIONS: Array< Select > = [
 	{ value: '', label: __( 'No shipping class', 'woocommerce' ) },
 	{
 		value: ADD_NEW_SHIPPING_CLASS_OPTION_VALUE,
@@ -44,12 +49,17 @@ export const DEFAULT_SHIPPING_CLASS_OPTIONS: SelectControl.Option[] = [
 
 function mapShippingClassToSelectOption(
 	shippingClasses: ProductShippingClass[]
-): SelectControl.Option[] {
+): Array< Select > {
 	return shippingClasses.map( ( { slug, name } ) => ( {
 		value: slug,
 		label: name,
 	} ) );
 }
+
+/*
+ * Query to fetch shipping classes.
+ */
+const shippingClassRequestQuery = {};
 
 function extractDefaultShippingClassFromProduct(
 	categories?: PartialProduct[ 'categories' ],
@@ -78,7 +88,7 @@ export function Edit( {
 
 	const blockProps = useWooBlockProps( attributes );
 
-	const { createProductShippingClass, invalidateResolution } = useDispatch(
+	const { createProductShippingClass } = useDispatch(
 		EXPERIMENTAL_PRODUCT_SHIPPING_CLASSES_STORE_NAME
 	);
 
@@ -130,9 +140,10 @@ export function Edit( {
 			return {
 				shippingClasses:
 					( isInSelectedTab &&
-						getProductShippingClasses<
-							ProductShippingClass[]
-						>() ) ||
+						// @ts-expect-error Todo: awaiting more global fix, demo: https://github.com/woocommerce/woocommerce/pull/54146
+						getProductShippingClasses(
+							shippingClassRequestQuery
+						) ) ||
 					[],
 			};
 		},
@@ -212,15 +223,12 @@ export function Edit( {
 						shippingClasses
 					) }
 					onAdd={ ( shippingClassValues ) =>
-						createProductShippingClass<
-							Promise< ProductShippingClass >
-						>( shippingClassValues )
-							.then( ( value ) => {
+						createProductShippingClass( shippingClassValues, {
+							optimisticQueryUpdate: shippingClassRequestQuery,
+						} )
+							.then( ( value: ProductShippingClass ) => {
 								recordEvent(
 									'product_new_shipping_class_modal_add_button_click'
-								);
-								invalidateResolution(
-									'getProductShippingClasses'
 								);
 								setShippingClass( value.slug );
 								return value;

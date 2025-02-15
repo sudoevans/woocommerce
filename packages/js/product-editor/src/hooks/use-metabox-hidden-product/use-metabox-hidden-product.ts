@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { WCUser, useUser } from '@woocommerce/data';
-import { useEntityProp } from '@wordpress/core-data';
+import { useEntityProp, store as coreStore } from '@wordpress/core-data';
 import { dispatch } from '@wordpress/data';
 import { useState } from '@wordpress/element';
 
@@ -23,16 +23,20 @@ export function useMetaboxHiddenProduct() {
 
 	async function saveMetaboxhiddenProduct(
 		value: string[]
-	): Promise< WCUser< 'capabilities' > > {
+	): Promise< WCUser > {
 		try {
 			setIsSaving( true );
 
-			const { saveEntityRecord } = dispatch( 'core' );
-			const currentUser: WCUser< 'capabilities' > =
-				( await saveEntityRecord( 'root', 'user', {
+			// @ts-expect-error Todo: awaiting more global fix, demo: https://github.com/woocommerce/woocommerce/pull/54146
+			const { saveEntityRecord } = dispatch( coreStore );
+			const currentUser: WCUser = ( await saveEntityRecord(
+				'root',
+				'user',
+				{
 					id: user.id,
 					metaboxhidden_product: value,
-				} ) ) as never;
+				}
+			) ) as never;
 
 			return currentUser;
 		} finally {

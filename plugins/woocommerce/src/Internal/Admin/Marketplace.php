@@ -23,6 +23,13 @@ class Marketplace {
 	 * @internal
 	 */
 	final public function init() {
+		add_action( 'init', array( $this, 'on_init' ) );
+	}
+
+	/**
+	 * Hook into WordPress on init.
+	 */
+	public function on_init() {
 		if ( false === FeaturesUtil::feature_is_enabled( 'marketplace' ) ) {
 			/** Feature controller instance @var FeaturesController $feature_controller */
 			$feature_controller = wc_get_container()->get( FeaturesController::class );
@@ -126,6 +133,7 @@ class Marketplace {
 			admin_url( 'admin.php' )
 		);
 
+		wc_admin_record_tracks_event( 'marketplace_plugin_install_woo_clicked' );
 		wp_safe_redirect( $woo_url );
 		exit;
 	}

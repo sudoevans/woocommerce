@@ -24,7 +24,6 @@ import { shortcode, Icon } from '@wordpress/icons';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useState, createInterpolateElement } from '@wordpress/element';
 import { store as noticesStore } from '@wordpress/notices';
-import { woo } from '@woocommerce/icons';
 import { findBlock } from '@woocommerce/utils';
 
 /**
@@ -164,7 +163,7 @@ const ConvertTemplate = ( { blockifyConfig, clientId, attributes } ) => {
 			</Button>
 			<Button
 				variant="secondary"
-				href="https://woocommerce.com/document/cart-checkout-blocks-status/"
+				href="https://woocommerce.com/document/woocommerce-store-editing/customizing-cart-and-checkout/"
 				target="_blank"
 				tabIndex={ 0 }
 			>
@@ -202,7 +201,7 @@ const Edit = ( { clientId, attributes }: BlockEditProps< Attributes > ) => {
 			a: (
 				// Suppress the warning as this <a> will be interpolated into the string with content.
 				// eslint-disable-next-line jsx-a11y/anchor-has-content
-				<ExternalLink href="https://woocommerce.com/document/cart-checkout-blocks-status/" />
+				<ExternalLink href="https://woocommerce.com/document/woocommerce-store-editing/customizing-cart-and-checkout/" />
 			),
 		}
 	);
@@ -219,17 +218,10 @@ const Edit = ( { clientId, attributes }: BlockEditProps< Attributes > ) => {
 				</div>
 				<div className="wp-block-woocommerce-classic-shortcode__placeholder-copy">
 					<div className="wp-block-woocommerce-classic-shortcode__placeholder-copy__icon-container">
-						<span className="woo-icon">
-							<Icon icon={ woo } />{ ' ' }
-							{ __( 'WooCommerce', 'woocommerce' ) }
-						</span>
+						<h1>{ __( 'WooCommerce', 'woocommerce' ) }</h1>
 						<span>{ placeholderTitle }</span>
 					</div>
-					<p
-						dangerouslySetInnerHTML={ {
-							__html: placeholderDescription,
-						} }
-					/>
+					<p>{ placeholderDescription }</p>
 					<p>{ learnMoreContent }</p>
 					{ canConvert && blockifyConfig && (
 						<ConvertTemplate
@@ -288,6 +280,7 @@ const settings = {
 			isDefault: true,
 		},
 	],
+	apiVersion: 3,
 };
 
 registerBlockType( metadata, settings );

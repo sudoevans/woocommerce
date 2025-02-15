@@ -37,6 +37,15 @@ final class OrderUtil {
 	}
 
 	/**
+	 * Helper function to get whether custom order tables are enabled or not.
+	 *
+	 * @return bool
+	 */
+	public static function custom_orders_table_datastore_cache_enabled(): bool {
+		return wc_get_container()->get( CustomOrdersTableController::class )->hpos_data_caching_is_enabled();
+	}
+
+	/**
 	 * Helper function to get whether the orders cache should be used or not.
 	 *
 	 * @return bool True if the orders cache should be used, false otherwise.
@@ -228,4 +237,19 @@ final class OrderUtil {
 		return $count_per_status;
 	}
 
+	/**
+	 * Removes the 'wc-' prefix from status.
+	 *
+	 * @param string $status The status to remove the prefix from.
+	 *
+	 * @return string The status without the prefix.
+	 * @since 9.2.0
+	 */
+	public static function remove_status_prefix( string $status ): string {
+		if ( strpos( $status, 'wc-' ) === 0 ) {
+			$status = substr( $status, 3 );
+		}
+
+		return $status;
+	}
 }

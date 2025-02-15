@@ -13,6 +13,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { dispatch } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import fastDeepEqual from 'fast-deep-equal/es6';
+import { store as noticesStore } from '@wordpress/notices';
 
 /**
  * Internal dependencies
@@ -40,6 +41,7 @@ const SettingsContext = createContext< SettingsContextType >( {
 	updateLocation: () => void null,
 	isSaving: false,
 	save: () => void null,
+	isDirty: false,
 } );
 
 export const useSettingsContext = (): SettingsContextType => {
@@ -52,6 +54,7 @@ export const SettingsProvider = ( {
 	children: JSX.Element[] | JSX.Element;
 } ): JSX.Element => {
 	const [ isSaving, setIsSaving ] = useState( false );
+	const [ isDirty, setIsDirty ] = useState( false );
 	const [ pickupLocations, setPickupLocations ] = useState<
 		SortablePickupLocation[]
 	>( getInitialPickupLocations );
@@ -60,6 +63,7 @@ export const SettingsProvider = ( {
 
 	const setSettingField = useCallback(
 		( field: keyof ShippingMethodSettings ) => ( newValue: unknown ) => {
+			setIsDirty( true );
 			setSettings( ( prevValue ) => ( {
 				...prevValue,
 				[ field ]: newValue,
@@ -68,7 +72,16 @@ export const SettingsProvider = ( {
 		[]
 	);
 
+	const setPickupLocationsState = useCallback(
+		( newLocations: SortablePickupLocation[] ) => {
+			setIsDirty( true );
+			setPickupLocations( newLocations );
+		},
+		[]
+	);
+
 	const toggleLocation = useCallback( ( rowId: UniqueIdentifier ) => {
+		setIsDirty( true );
 		setPickupLocations( ( previousLocations: SortablePickupLocation[] ) => {
 			const locationIndex = previousLocations.findIndex(
 				( { id } ) => id === rowId
@@ -85,6 +98,7 @@ export const SettingsProvider = ( {
 		locationData: SortablePickupLocation
 	) => {
 		setPickupLocations( ( prevData ) => {
+			setIsDirty( true );
 			if ( rowId === 'new' ) {
 				return [
 					...prevData,
@@ -129,6 +143,7 @@ export const SettingsProvider = ( {
 		};
 
 		setIsSaving( true );
+		setIsDirty( false );
 
 		// @todo This should be improved to include error handling in case of API failure, or invalid data being sent that
 		// does not match the schema. This would fail silently on the API side.
@@ -148,7 +163,7 @@ export const SettingsProvider = ( {
 					data.pickup_locations
 				)
 			) {
-				dispatch( 'core/notices' ).createSuccessNotice(
+				dispatch( noticesStore ).createSuccessNotice(
 					__(
 						'Local Pickup settings have been saved.',
 						'woocommerce'
@@ -163,11 +178,12 @@ export const SettingsProvider = ( {
 		setSettingField,
 		readOnlySettings,
 		pickupLocations,
-		setPickupLocations,
+		setPickupLocations: setPickupLocationsState,
 		toggleLocation,
 		updateLocation,
 		isSaving,
 		save,
+		isDirty,
 	};
 
 	return (

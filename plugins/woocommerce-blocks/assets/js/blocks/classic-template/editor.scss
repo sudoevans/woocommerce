@@ -33,17 +33,14 @@
 	.wp-block-woocommerce-classic-template__placeholder-copy__icon-container {
 		margin: 0 0 $gap;
 
+		h1 {
+			color: #{$studio-woocommerce-purple};
+			@include font-size(large);
+			margin: 0;
+		}
 		span {
 			@include font-size(larger);
 			display: block;
-		}
-		.woo-icon {
-			color: #{$studio-woocommerce-purple};
-			@include font-size(large);
-
-			svg {
-				vertical-align: middle;
-			}
 		}
 	}
 	p {

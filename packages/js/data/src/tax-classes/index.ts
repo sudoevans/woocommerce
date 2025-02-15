@@ -5,7 +5,7 @@ import { createCrudDataStore } from '../crud';
 import { STORE_NAME, WC_TAX_CLASSES_NAMESPACE } from './constants';
 import * as resolvers from './resolvers';
 
-createCrudDataStore( {
+export const store = createCrudDataStore( {
 	storeName: STORE_NAME,
 	resourceName: 'TaxClass',
 	pluralResourceName: 'TaxClasses',

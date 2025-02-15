@@ -76,20 +76,21 @@ export function useProductAttributes( {
 
 	const fetchTerms = useCallback(
 		( attributeId: number ) => {
-			return resolveSelect(
-				EXPERIMENTAL_PRODUCT_ATTRIBUTE_TERMS_STORE_NAME
-			)
-				.getProductAttributeTerms< ProductAttributeTerm[] >( {
-					attribute_id: attributeId,
-				} )
-				.then(
-					( attributeTerms ) => {
-						return attributeTerms;
-					},
-					( error ) => {
-						return error;
-					}
-				);
+			return (
+				resolveSelect( EXPERIMENTAL_PRODUCT_ATTRIBUTE_TERMS_STORE_NAME )
+					// @ts-expect-error TODO react-18-upgrade: getProductAttributeTerms type is not correctly typed and was surfaced by https://github.com/woocommerce/woocommerce/pull/54146
+					.getProductAttributeTerms( {
+						attribute_id: attributeId,
+					} )
+					.then(
+						( attributeTerms: ProductAttributeTerm[] ) => {
+							return attributeTerms;
+						},
+						( error: string ) => {
+							return error;
+						}
+					)
+			);
 		},
 		[ productId ]
 	);
@@ -181,6 +182,7 @@ export function useProductAttributes( {
 		).then( ( termData ) => {
 			setAttributes( [
 				...globalAttributes.map( ( attr, index ) =>
+					// @ts-expect-error TODO react-18-upgrade: getProductAttributeTerms type is not correctly typed and was surfaced by https://github.com/woocommerce/woocommerce/pull/54146
 					enhanceAttribute( attr, termData[ index ] )
 				),
 				...localAttributes,

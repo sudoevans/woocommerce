@@ -3,6 +3,11 @@
 echo -e 'Activate default theme \n'
 wp-env run tests-cli wp theme activate twentytwentythree
 
+echo -e 'Install twentytwenty, twentytwentytwo and storefront themes \n'
+wp-env run tests-cli wp theme install twentytwenty
+wp-env run tests-cli wp theme install twentytwentytwo
+wp-env run tests-cli wp theme install storefront
+
 echo -e 'Update URL structure \n'
 wp-env run tests-cli wp rewrite structure '/%postname%/' --hard
 
@@ -16,6 +21,9 @@ wp-env run tests-cli wp plugin activate process-waiting-actions
 
 echo -e 'Activate Test Helper APIs utility plugin \n'
 wp-env run tests-cli wp plugin activate test-helper-apis
+
+echo -e 'Install Plugin-check utility plugin \n'
+wp-env run tests-cli wp plugin install plugin-check --activate
 
 echo -e 'Add Customer user \n'
 wp-env run tests-cli wp user create customer customer@woocommercecoree2etestsuite.com \
@@ -37,9 +45,6 @@ if [ $ENABLE_TRACKING == 1 ]; then
 	echo -e 'Enable tracking\n'
 	wp-env run tests-cli wp option update woocommerce_allow_tracking 'yes'
 fi
-
-echo -e 'Disabling coming soon option\n'
-wp-env run tests-cli wp option update woocommerce_coming_soon 'no'
 
 echo -e 'Upload test images \n'
 wp-env run tests-cli wp media import './test-data/images/image-01.png' './test-data/images/image-02.png' './test-data/images/image-03.png'

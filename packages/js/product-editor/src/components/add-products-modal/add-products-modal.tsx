@@ -60,15 +60,16 @@ export function AddProductsModal( {
 			setProducts( [] );
 
 			return resolveSelect( PRODUCTS_STORE_NAME )
-				.getProducts< Product[] >( {
+				.getProducts( {
 					search,
 					orderby: 'title',
 					order: 'asc',
+					// @ts-expect-error TODO react-18-upgrade: getProducts type is not correctly typed and was surfaced by https://github.com/woocommerce/woocommerce/pull/54146
 					exclude: [ ...initialValue, ...selectedProducts ].map(
 						( product ) => product.id
 					),
 				} )
-				.then( ( response ) => {
+				.then( ( response: Product[] ) => {
 					setProducts( response );
 					return response;
 				} );

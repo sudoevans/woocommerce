@@ -1,8 +1,8 @@
 /**
  * External dependencies
  */
-import { registerStore, StoreConfig } from '@wordpress/data';
-import { Reducer } from 'redux';
+import { createReduxStore, register } from '@wordpress/data';
+import type { ReduxStoreConfig } from '@wordpress/data/build-types/types';
 
 /**
  * Internal dependencies
@@ -18,7 +18,13 @@ type CrudDataStore = {
 	resourceName: string;
 	pluralResourceName: string;
 	namespace: string;
-	storeConfig?: Partial< StoreConfig< ResourceState > >;
+	storeConfig?: Partial<
+		ReduxStoreConfig<
+			ResourceState,
+			ReturnType< typeof createDispatchActions >,
+			ReturnType< typeof createSelectors >
+		>
+	>;
 };
 
 export const createCrudDataStore = ( {
@@ -54,11 +60,15 @@ export const createCrudDataStore = ( {
 
 	const crudReducer = createReducer( reducer );
 
-	registerStore( storeName, {
-		reducer: crudReducer as Reducer< ResourceState >,
+	const store = createReduxStore( storeName, {
+		reducer: crudReducer,
 		actions: { ...crudActions, ...actions },
 		selectors: { ...crudSelectors, ...selectors },
 		resolvers: { ...crudResolvers, ...resolvers },
 		controls: { ...defaultControls, ...controls },
 	} );
+
+	register( store );
+
+	return store;
 };

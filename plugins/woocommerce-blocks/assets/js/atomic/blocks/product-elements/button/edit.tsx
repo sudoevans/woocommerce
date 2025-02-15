@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import {
 	Disabled,
 	Button,
@@ -82,14 +82,12 @@ const Edit = ( {
 	return (
 		<>
 			<BlockControls>
-				{ isDescendentOfQueryLoop && (
-					<AlignmentToolbar
-						value={ attributes.textAlign }
-						onChange={ ( newAlign ) => {
-							setAttributes( { textAlign: newAlign || '' } );
-						} }
-					/>
-				) }
+				<AlignmentToolbar
+					value={ attributes.textAlign }
+					onChange={ ( newAlign ) => {
+						setAttributes( { textAlign: newAlign || '' } );
+					} }
+				/>
 			</BlockControls>
 			<InspectorControls>
 				<WidthPanel
@@ -101,7 +99,7 @@ const Edit = ( {
 				<Disabled>
 					<Block
 						{ ...{ ...attributes, ...context } }
-						className={ classnames( attributes.className, {
+						className={ clsx( attributes.className, {
 							[ `has-custom-width wp-block-button__width-${ width }` ]:
 								width,
 						} ) }

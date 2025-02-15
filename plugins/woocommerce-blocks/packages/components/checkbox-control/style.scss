@@ -2,6 +2,18 @@
 	@include reset-color();
 	@include reset-typography();
 	margin-top: em($gap);
+	line-height: 1;
+
+	// Validated checkbox is set to grid because we need to display the validation error below the checkbox, the flex
+	// layout doesn't allow for that without extra markup.
+	&.wc-block-components-validated-checkbox-control label {
+		display: grid;
+		grid-template-columns: auto 1fr;
+
+		.wc-block-components-validation-error {
+			grid-column: 1 / -1;
+		}
+	}
 
 	label {
 		align-items: flex-start;
@@ -38,8 +50,8 @@
 		}
 
 		&:focus {
-			outline: 1px solid $universal-border-strong;
-			outline-offset: 2px;
+			outline: 1.5px solid $universal-border-strong;
+			outline-offset: 1.5px;
 		}
 
 		&::before,
@@ -54,15 +66,16 @@
 		.has-dark-controls & {
 			border-color: $controls-border-dark;
 			background-color: $input-background-dark;
+			color: $input-text-dark;
 
 			&:checked {
 				background: $input-background-dark;
-				border-color: $controls-border-dark;
+				border-color: currentColor;
 			}
 
 			&:focus {
-				outline: 2px solid $controls-border-dark;
-				outline-offset: 2px;
+				outline: 1.5px solid currentColor;
+				outline-offset: 1.5px;
 			}
 		}
 	}
@@ -108,14 +121,6 @@
 	}
 }
 
-// Hack to hide the check mark in IE11
-// See comment: https://github.com/woocommerce/woocommerce-gutenberg-products-block/pull/2320/#issuecomment-621936576
-@include ie11() {
-	.wc-block-components-checkbox__mark {
-		display: none;
-	}
-}
-
 .theme-twentytwentyone {
 	.wc-block-components-checkbox__input[type="checkbox"],
 	.has-dark-controls .wc-block-components-checkbox__input[type="checkbox"] {
@@ -125,8 +130,7 @@
 	}
 
 	.wc-block-components-checkbox__input[type="checkbox"]:checked,
-	.has-dark-controls
-	.wc-block-components-checkbox__input[type="checkbox"]:checked {
+	.has-dark-controls .wc-block-components-checkbox__input[type="checkbox"]:checked {
 		background-color: #fff;
 		border-color: var(--form--border-color);
 	}

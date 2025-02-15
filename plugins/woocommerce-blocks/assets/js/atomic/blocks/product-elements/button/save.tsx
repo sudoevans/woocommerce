@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { useBlockProps } from '@wordpress/block-editor';
-import classnames from 'classnames';
+import clsx from 'clsx';
 
 /**
  * Internal dependencies
@@ -13,10 +13,12 @@ type Props = {
 	attributes: BlockAttributes;
 };
 
-const Save = ( { attributes }: Props ): JSX.Element | null => {
+const Save = ( { attributes, innerBlocks }: Props ): JSX.Element | null => {
 	if (
 		attributes.isDescendentOfQueryLoop ||
-		attributes.isDescendentOfSingleProductBlock
+		attributes.isDescendentOfSingleProductBlock ||
+		! innerBlocks ||
+		innerBlocks?.length === 0
 	) {
 		return null;
 	}
@@ -24,7 +26,7 @@ const Save = ( { attributes }: Props ): JSX.Element | null => {
 	return (
 		<div
 			{ ...useBlockProps.save( {
-				className: classnames( 'is-loading', attributes.className, {
+				className: clsx( 'is-loading', attributes.className, {
 					[ `has-custom-width wp-block-button__width-${ attributes.width }` ]:
 						attributes.width,
 				} ),

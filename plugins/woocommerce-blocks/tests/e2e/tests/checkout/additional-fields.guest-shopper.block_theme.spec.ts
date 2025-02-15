@@ -1,8 +1,7 @@
 /**
  * External dependencies
  */
-import { expect, test as base } from '@woocommerce/e2e-playwright-utils';
-import { guestFile } from '@woocommerce/e2e-utils';
+import { expect, test as base, guestFile } from '@woocommerce/e2e-utils';
 
 /**
  * Internal dependencies
@@ -72,14 +71,47 @@ test.describe( 'Shopper → Additional Checkout Fields', () => {
 
 			await checkoutPageObject.placeOrder( false );
 
+			// Test that the required checkbox warning shows up after submitting without interacting.
+			await expect(
+				checkoutPageObject.page.getByText(
+					'Please check the box or you will be unable to order'
+				)
+			).toBeVisible();
+
+			await checkoutPageObject.page
+				.getByLabel( 'Test required checkbox' )
+				.check();
+
+			await expect(
+				checkoutPageObject.page.getByText(
+					'Please check the box or you will be unable to order'
+				)
+			).toBeHidden();
+
+			// Test that unchecking shows and checking again hides the message.
+			await checkoutPageObject.page
+				.getByLabel( 'Test required checkbox' )
+				.uncheck();
+
+			await expect(
+				checkoutPageObject.page.getByText(
+					'Please check the box or you will be unable to order'
+				)
+			).toBeVisible();
+
+			await checkoutPageObject.page
+				.getByLabel( 'Test required checkbox' )
+				.check();
+
+			await expect(
+				checkoutPageObject.page.getByText(
+					'Please check the box or you will be unable to order'
+				)
+			).toBeHidden();
+
 			await expect(
 				checkoutPageObject.page.getByText(
 					'Please enter a valid government id'
-				)
-			).toBeVisible();
-			await expect(
-				checkoutPageObject.page.getByText(
-					'Please select a valid option'
 				)
 			).toBeVisible();
 		} );
@@ -102,37 +134,19 @@ test.describe( 'Shopper → Additional Checkout Fields', () => {
 						shipping: {
 							'Government ID': '12345',
 							'Confirm government ID': '12345',
+							'How wide is your road? (optional)': 'wide',
 						},
 						billing: {
 							'Government ID': '54321',
 							'Confirm government ID': '54321',
+							'How wide is your road? (optional)': 'narrow',
 						},
 					},
 					order: {
-						'How did you hear about us?': 'Other',
+						'How did you hear about us? (optional)': 'other',
 						'What is your favourite colour?': 'Blue',
 					},
 				}
-			);
-
-			// Fill select fields "manually" (Not part of "fillInCheckoutWithTestData"). This is a workaround for select
-			// fields until we recreate th Combobox component. This is because the aria-label includes the value so getting
-			// by label alone is not reliable unless we know the value.
-			await checkoutPageObject.page
-				.getByRole( 'group', {
-					name: 'Shipping address',
-				} )
-				.getByLabel( 'How wide is your road?' )
-				.fill( 'wide' );
-			await checkoutPageObject.page
-				.getByRole( 'group', {
-					name: 'Billing address',
-				} )
-				.getByLabel( 'How wide is your road?' )
-				.fill( 'narrow' );
-
-			await checkoutPageObject.page.evaluate(
-				'document.activeElement.blur()'
 			);
 
 			await checkoutPageObject.page
@@ -167,6 +181,10 @@ test.describe( 'Shopper → Additional Checkout Fields', () => {
 			await checkoutPageObject.waitForCustomerDataUpdate();
 
 			await checkoutPageObject.waitForCheckoutToFinishUpdating();
+
+			await checkoutPageObject.page
+				.getByLabel( 'Test required checkbox' )
+				.check();
 
 			await checkoutPageObject.placeOrder();
 
@@ -218,7 +236,7 @@ test.describe( 'Shopper → Additional Checkout Fields', () => {
 					.getByLabel(
 						'Is this a personal purchase or a business purchase?'
 					)
-			).toHaveValue( 'Business' );
+			).toHaveValue( 'business' );
 			await expect(
 				checkoutPageObject.page
 					.getByRole( 'group', {
@@ -252,8 +270,8 @@ test.describe( 'Shopper → Additional Checkout Fields', () => {
 					.getByRole( 'group', {
 						name: 'Shipping address',
 					} )
-					.getByLabel( 'How wide is your road?' )
-			).toHaveValue( 'Wide' );
+					.getByLabel( 'How wide is your road? (optional)' )
+			).toHaveValue( 'wide' );
 			await expect(
 				checkoutPageObject.page
 					.getByRole( 'group', {
@@ -280,8 +298,8 @@ test.describe( 'Shopper → Additional Checkout Fields', () => {
 					.getByRole( 'group', {
 						name: 'Billing address',
 					} )
-					.getByLabel( 'How wide is your road?' )
-			).toHaveValue( 'Narrow' );
+					.getByLabel( 'How wide is your road? (optional)' )
+			).toHaveValue( 'narrow' );
 		} );
 	} );
 } );

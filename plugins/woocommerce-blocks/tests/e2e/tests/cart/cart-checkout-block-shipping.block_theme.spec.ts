@@ -1,8 +1,7 @@
 /**
  * External dependencies
  */
-import { expect, test as base } from '@woocommerce/e2e-playwright-utils';
-import { FrontendUtils } from '@woocommerce/e2e-utils';
+import { expect, test as base, FrontendUtils } from '@woocommerce/e2e-utils';
 
 /**
  * Internal dependencies
@@ -49,7 +48,9 @@ test.describe( 'Shopper → Shipping', () => {
 		requestUtils,
 		browser,
 	} ) => {
-		const guestContext = await browser.newContext();
+		const guestContext = await browser.newContext( {
+			storageState: { cookies: [], origins: [] },
+		} );
 		const userPage = await guestContext.newPage();
 
 		const userFrontendUtils = new FrontendUtils( userPage, requestUtils );
@@ -58,8 +59,10 @@ test.describe( 'Shopper → Shipping', () => {
 		await userFrontendUtils.addToCart( REGULAR_PRICED_PRODUCT_NAME );
 		await userFrontendUtils.goToCart();
 
+		// Note that the default customer location is set to the shop country/region, which
+		// is why this label is pre-populated with the shop country/region.
 		await expect(
-			userPage.getByLabel( 'Add an address for shipping options' )
+			userPage.getByText( 'Enter address to check delivery options' )
 		).toBeVisible();
 	} );
 
@@ -79,7 +82,7 @@ test.describe( 'Shopper → Shipping', () => {
 
 		await expect(
 			userPage.getByText(
-				'Shipping options will be displayed here after entering your full shipping addres'
+				'Enter a shipping address to view shipping options.'
 			)
 		).toBeVisible();
 
@@ -87,7 +90,7 @@ test.describe( 'Shopper → Shipping', () => {
 
 		await expect(
 			userPage.getByText(
-				'Shipping options will be displayed here after entering your full shipping addres'
+				'Enter a shipping address to view shipping options.'
 			)
 		).toBeHidden();
 	} );

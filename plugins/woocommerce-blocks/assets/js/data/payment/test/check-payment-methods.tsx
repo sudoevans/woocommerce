@@ -3,7 +3,7 @@
  */
 import * as wpDataFunctions from '@wordpress/data';
 import { previewCart } from '@woocommerce/resource-previews';
-import { PAYMENT_STORE_KEY, CART_STORE_KEY } from '@woocommerce/block-data';
+import { paymentStore, CART_STORE_KEY } from '@woocommerce/block-data';
 import {
 	registerPaymentMethod,
 	registerExpressPaymentMethod,
@@ -123,6 +123,9 @@ const registerMockPaymentMethods = ( savedCards = true ) => {
 		};
 		registerExpressPaymentMethod( {
 			name,
+			title: 'Express Payment Method',
+			description: 'A test express payment method',
+			gatewayId: 'test-express-payment-method',
 			content: <Content />,
 			edit: <div>An express payment method</div>,
 			canMakePayment: mockedExpressCanMakePayment,
@@ -133,7 +136,7 @@ const registerMockPaymentMethods = ( savedCards = true ) => {
 		} );
 	} );
 	wpDataFunctions
-		.dispatch( PAYMENT_STORE_KEY )
+		.dispatch( paymentStore )
 		.__internalUpdateAvailablePaymentMethods();
 	wpDataFunctions.dispatch( CART_STORE_KEY ).receiveCart( {
 		...previewCart,

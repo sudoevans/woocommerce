@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { expect, test as base } from '@woocommerce/e2e-playwright-utils';
+import { expect, test as base } from '@woocommerce/e2e-utils';
 
 /**
  * Internal dependencies
@@ -70,13 +70,13 @@ test.describe( 'Merchant → Additional Checkout Fields', () => {
 				name: 'Shipping address',
 			} )
 			.getByLabel( 'How wide is your road?' )
-			.fill( 'wide' );
+			.selectOption( 'wide' );
 		await checkoutPageObject.page
 			.getByRole( 'group', {
 				name: 'Billing address',
 			} )
 			.getByLabel( 'How wide is your road?' )
-			.fill( 'narrow' );
+			.selectOption( 'narrow' );
 
 		await checkoutPageObject.page.evaluate(
 			'document.activeElement.blur()'
@@ -101,6 +101,10 @@ test.describe( 'Merchant → Additional Checkout Fields', () => {
 			} )
 			.getByLabel( 'Can a truck fit down your road?' )
 			.uncheck();
+
+		await checkoutPageObject.page
+			.getByLabel( 'Test required checkbox' )
+			.check();
 
 		await checkoutPageObject.placeOrder();
 
@@ -206,13 +210,13 @@ test.describe( 'Merchant → Additional Checkout Fields', () => {
 				name: 'Shipping address',
 			} )
 			.getByLabel( 'How wide is your road?' )
-			.fill( 'wide' );
+			.selectOption( 'wide' );
 		await checkoutPageObject.page
 			.getByRole( 'group', {
 				name: 'Billing address',
 			} )
 			.getByLabel( 'How wide is your road?' )
-			.fill( 'narrow' );
+			.selectOption( 'narrow' );
 
 		await checkoutPageObject.page.evaluate(
 			'document.activeElement.blur()'
@@ -237,6 +241,10 @@ test.describe( 'Merchant → Additional Checkout Fields', () => {
 			} )
 			.getByLabel( 'Can a truck fit down your road?' )
 			.uncheck();
+
+		await checkoutPageObject.page
+			.getByLabel( 'Test required checkbox' )
+			.check();
 
 		await checkoutPageObject.placeOrder();
 

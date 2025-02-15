@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { OPTIONS_STORE_NAME } from '@woocommerce/data';
+import { optionsStore } from '@woocommerce/data';
 import { createElement } from '@wordpress/element';
 import { recordEvent } from '@woocommerce/tracks';
 
@@ -23,8 +23,7 @@ export const CustomerEffortScoreModalContainer: React.FC = () => {
 		resolving: isLoading,
 		visibleCESModalData,
 	} = useSelect( ( select ) => {
-		const { getOption, hasFinishedResolution } =
-			select( OPTIONS_STORE_NAME );
+		const { getOption, hasFinishedResolution } = select( optionsStore );
 		const { getVisibleCESModalData } = select( STORE_KEY );
 
 		const adminInstallTimestamp =

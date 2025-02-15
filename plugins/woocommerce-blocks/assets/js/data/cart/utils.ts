@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { select } from '@wordpress/data';
-import { camelCaseKeys } from '@woocommerce/base-utils';
+import { camelCaseKeys, debounce } from '@woocommerce/base-utils';
 import { isEmail } from '@wordpress/url';
 import {
 	CartBillingAddress,
@@ -10,10 +10,12 @@ import {
 	Cart,
 	CartResponse,
 } from '@woocommerce/types';
+import { CurriedSelectorsOf } from '@wordpress/data/build-types/types';
 
 /**
  * Internal dependencies
  */
+import type { ValidationStoreDescriptor } from '../validation';
 import { STORE_KEY as VALIDATION_STORE_KEY } from '../validation/constants';
 
 export const mapCartResponseToCart = ( responseCart: CartResponse ): Cart => {
@@ -21,7 +23,9 @@ export const mapCartResponseToCart = ( responseCart: CartResponse ): Cart => {
 };
 
 export const shippingAddressHasValidationErrors = () => {
-	const validationStore = select( VALIDATION_STORE_KEY );
+	const validationStore = select(
+		VALIDATION_STORE_KEY
+	) as CurriedSelectorsOf< ValidationStoreDescriptor >;
 	// Check if the shipping address form has validation errors - if not then we know the full required
 	// address has been pushed to the server.
 	const stateValidationErrors =
@@ -97,7 +101,9 @@ export const validateDirtyProps = ( dirtyProps: {
 	billingAddress: BaseAddressKey[];
 	shippingAddress: BaseAddressKey[];
 } ): boolean => {
-	const validationStore = select( VALIDATION_STORE_KEY );
+	const validationStore = select(
+		VALIDATION_STORE_KEY
+	) as CurriedSelectorsOf< ValidationStoreDescriptor >;
 
 	const invalidProps = [
 		...dirtyProps.billingAddress.filter( ( key ) => {
@@ -116,3 +122,27 @@ export const validateDirtyProps = ( dirtyProps: {
 
 	return invalidProps.length === 0;
 };
+
+/**
+ * Gets the localStorage flag to indicate whether the customer data is dirty.
+ */
+export const getIsCustomerDataDirty = () => {
+	return (
+		window.localStorage.getItem(
+			'WOOCOMMERCE_CHECKOUT_IS_CUSTOMER_DATA_DIRTY'
+		) === 'true'
+	);
+};
+
+/**
+ * Sets a flag in localStorage to indicate whether the customer data has been modified.
+ */
+export const setIsCustomerDataDirty = debounce(
+	( isCustomerDataDirty: boolean ) => {
+		window.localStorage.setItem(
+			'WOOCOMMERCE_CHECKOUT_IS_CUSTOMER_DATA_DIRTY',
+			isCustomerDataDirty ? 'true' : 'false'
+		);
+	},
+	300
+);

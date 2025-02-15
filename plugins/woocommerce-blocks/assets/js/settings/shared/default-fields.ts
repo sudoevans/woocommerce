@@ -1,13 +1,15 @@
 /**
  * External dependencies
  */
-import { ComboboxControlOption } from '@woocommerce/base-components/combobox';
 import type { AllHTMLAttributes, AriaAttributes } from 'react';
+import type { JSONSchemaType } from 'ajv';
+import type { DocumentSchema } from '@woocommerce/base-hooks';
 
 /**
  * Internal dependencies
  */
 import { getSetting } from './utils';
+import { SelectOption } from '../../base/components';
 
 // A list of attributes that can be added to a custom field when registering it.
 type CustomFieldAttributes = Pick<
@@ -39,9 +41,17 @@ export interface FormField {
 	// The type of input to render. Defaults to text.
 	type?: string;
 	// The options if this is a select field
-	options?: ComboboxControlOption[];
+	options?: SelectOption[];
+	// The placeholder for the field, only applicable for select fields.
+	placeholder?: string;
 	// Additional attributes added when registering a field. String in key is required for data attributes.
 	attributes?: Record< keyof CustomFieldAttributes, string >;
+	// The rules for the field.
+	rules?: {
+		required?: JSONSchemaType< DocumentSchema >;
+		validation?: JSONSchemaType< DocumentSchema >;
+		hidden?: JSONSchemaType< DocumentSchema >;
+	};
 }
 
 export interface LocaleSpecificFormField extends Partial< FormField > {
@@ -59,14 +69,16 @@ export interface CoreAddressForm {
 	state: FormField;
 	postcode: FormField;
 	phone: FormField;
+	[ x: `${ string }/${ string }` ]: FormField; // Additional fields are named like: namespace/field_name
 }
 
 export interface CoreContactForm {
 	email: FormField;
+	[ x: `${ string }/${ string }` ]: FormField; // Additional fields are named like: namespace/field_name
 }
 
-export type AddressForm = CoreAddressForm & Record< string, FormField >;
-export type ContactForm = CoreContactForm & Record< string, FormField >;
+export type AddressForm = CoreAddressForm;
+export type ContactForm = CoreContactForm;
 export type FormFields = AddressForm & ContactForm;
 export type AddressFormValues = Omit< ShippingAddress, 'email' >;
 export type ContactFormValues = { email: string };
@@ -88,10 +100,11 @@ export interface CoreAddress {
 	state: string;
 	postcode: string;
 	phone: string;
+	[ x: `${ string }/${ string }` ]: string | boolean; // Additional fields are named like: namespace/field_name
 }
 
 export type AdditionalValues = Record<
-	Exclude< string, keyof CoreAddress >,
+	`${ string }/${ string }`,
 	string | boolean
 >;
 
@@ -105,9 +118,7 @@ export type KeyedFormField = FormField & {
 	errorMessage?: string;
 };
 
-export type CountryAddressForm = Record< string, FormFields >;
-
-export type FormFieldsConfig = Record< keyof FormFields, Partial< FormField > >;
+export type CountryAddressFields = Record< string, FormFields >;
 
 /**
  * Default field properties.

@@ -19,9 +19,10 @@ export const useTagSearch = () => {
 		setIsSearching( true );
 		const query = search !== undefined ? { search } : '';
 		resolveSelect( EXPERIMENTAL_PRODUCT_TAGS_STORE_NAME )
+			// @ts-expect-error TODO react-18-upgrade: query type is not correctly typed and was surfaced by https://github.com/woocommerce/woocommerce/pull/54146
 			.getProductTags( query )
-			.then( ( tags ) => {
-				setFetchedTags( tags as ProductTag[] );
+			.then( ( tags: ProductTag[] ) => {
+				setFetchedTags( tags );
 			} )
 			.finally( () => {
 				setIsSearching( false );

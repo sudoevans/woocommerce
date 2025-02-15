@@ -1,135 +1,105 @@
 /**
  * External dependencies
  */
-import {
-	InnerBlocks,
-	useBlockProps,
-	useInnerBlocksProps,
-} from '@wordpress/block-editor';
+import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
 import { BlockEditProps, InnerBlockTemplate } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
-import { useCollection } from '@woocommerce/base-context/hooks';
-import { AttributeTerm } from '@woocommerce/types';
-import { Spinner } from '@wordpress/components';
+import { Icon, close } from '@wordpress/icons';
+import { useState } from '@wordpress/element';
+import { filterThreeLines } from '@woocommerce/icons';
+import clsx from 'clsx';
 
 /**
  * Internal dependencies
  */
-import type { ProductFiltersBlockAttributes } from './types';
+import './editor.scss';
+import { type BlockAttributes } from './types';
+import { getProductFiltersCss } from './utils';
 
 const TEMPLATE: InnerBlockTemplate[] = [
 	[
 		'core/heading',
 		{
 			level: 3,
-			style: { typography: { fontSize: '24px' } },
 			content: __( 'Filters', 'woocommerce' ),
+			style: {
+				margin: { top: '0', bottom: '0' },
+				spacing: { margin: { top: '0', bottom: '0' } },
+			},
 		},
 	],
-	[
-		'woocommerce/product-filter',
-		{
-			filterType: 'active-filters',
-			heading: __( 'Active', 'woocommerce' ),
-		},
-	],
-	[
-		'woocommerce/product-filter',
-		{
-			filterType: 'price-filter',
-			heading: __( 'Price', 'woocommerce' ),
-		},
-	],
-	[
-		'woocommerce/product-filter',
-		{
-			filterType: 'stock-filter',
-			heading: __( 'Status', 'woocommerce' ),
-		},
-	],
-	[
-		'woocommerce/product-filter',
-		{
-			filterType: 'attribute-filter',
-			heading: __( 'Attribute', 'woocommerce' ),
-			attributeId: 0,
-		},
-	],
-	[
-		'woocommerce/product-filter',
-		{
-			filterType: 'rating-filter',
-			heading: __( 'Rating', 'woocommerce' ),
-		},
-	],
+	[ 'woocommerce/product-filter-active' ],
+	[ 'woocommerce/product-filter-price' ],
+	[ 'woocommerce/product-filter-rating' ],
+	[ 'woocommerce/product-filter-attribute' ],
+	[ 'woocommerce/product-filter-status' ],
 ];
 
-const addHighestProductCountAttributeToTemplate = (
-	template: InnerBlockTemplate[],
-	highestProductCountAttribute: AttributeTerm | null
-): InnerBlockTemplate[] => {
-	if ( highestProductCountAttribute === null ) return template;
-
-	return template.map( ( block ) => {
-		const blockNameIndex = 0;
-		const blockAttributesIndex = 1;
-		const blockName = block[ blockNameIndex ];
-		const blockAttributes = block[ blockAttributesIndex ];
-		if (
-			blockName === 'woocommerce/product-filter' &&
-			blockAttributes?.filterType === 'attribute-filter'
-		) {
-			return [
-				blockName,
-				{
-					...blockAttributes,
-					heading: highestProductCountAttribute.name,
-					attributeId: highestProductCountAttribute.id,
-				},
-			];
-		}
-
-		return block;
+export const Edit = ( props: BlockEditProps< BlockAttributes > ) => {
+	const { attributes } = props;
+	const { isPreview } = attributes;
+	const [ isOpen, setIsOpen ] = useState( false );
+	const blockProps = useBlockProps( {
+		className: clsx( 'wc-block-product-filters', {
+			'is-overlay-opened': isOpen,
+		} ),
+		style: getProductFiltersCss( attributes ),
 	} );
-};
-
-export const Edit = ( {}: BlockEditProps< ProductFiltersBlockAttributes > ) => {
-	const blockProps = useBlockProps();
-	const { results: attributes, isLoading } = useCollection< AttributeTerm >( {
-		namespace: '/wc/store/v1',
-		resourceName: 'products/attributes',
-	} );
-
-	const highestProductCountAttribute =
-		attributes.reduce< AttributeTerm | null >(
-			( attributeWithMostProducts, attribute ) => {
-				if ( attributeWithMostProducts === null ) {
-					return attribute;
-				}
-				return attribute.count > attributeWithMostProducts.count
-					? attribute
-					: attributeWithMostProducts;
-			},
-			null
-		);
-	const updatedTemplate = addHighestProductCountAttributeToTemplate(
-		TEMPLATE,
-		highestProductCountAttribute
-	);
-
-	if ( isLoading ) {
-		return <Spinner />;
-	}
 
 	return (
 		<div { ...blockProps }>
-			<InnerBlocks templateLock={ false } template={ updatedTemplate } />
+			{ isPreview ? (
+				<div className="wc-block-product-filters__overlay-content">
+					<InnerBlocks templateLock={ false } template={ TEMPLATE } />
+				</div>
+			) : (
+				<>
+					<button
+						className="wc-block-product-filters__open-overlay"
+						onClick={ () => setIsOpen( ! isOpen ) }
+					>
+						<Icon icon={ filterThreeLines } />
+						<span>{ __( 'Filter products', 'woocommerce' ) }</span>
+					</button>
+
+					<div className="wc-block-product-filters__overlay">
+						<div className="wc-block-product-filters__overlay-wrapper">
+							<div
+								className="wc-block-product-filters__overlay-dialog"
+								role="dialog"
+							>
+								<header className="wc-block-product-filters__overlay-header">
+									<button
+										className="wc-block-product-filters__close-overlay"
+										onClick={ () => setIsOpen( ! isOpen ) }
+									>
+										<span>
+											{ __( 'Close', 'woocommerce' ) }
+										</span>
+										<Icon icon={ close } />
+									</button>
+								</header>
+								<div className="wc-block-product-filters__overlay-content">
+									<InnerBlocks
+										templateLock={ false }
+										template={ TEMPLATE }
+									/>
+								</div>
+								<footer className="wc-block-product-filters__overlay-footer">
+									<button
+										className="wc-block-product-filters__apply wp-block-button__link wp-element-button"
+										onClick={ () => setIsOpen( ! isOpen ) }
+									>
+										<span>
+											{ __( 'Apply', 'woocommerce' ) }
+										</span>
+									</button>
+								</footer>
+							</div>
+						</div>
+					</div>
+				</>
+			) }
 		</div>
 	);
-};
-
-export const Save = () => {
-	const blockProps = useBlockProps.save();
-	const innerBlocksProps = useInnerBlocksProps.save( blockProps );
-	return <div { ...innerBlocksProps } />;
 };

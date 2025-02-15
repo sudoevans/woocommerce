@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 import { TourKit, TourKitTypes } from '@woocommerce/components';
 import {
 	EXPERIMENTAL_PRODUCT_VARIATIONS_STORE_NAME,
-	OPTIONS_STORE_NAME,
+	optionsStore,
 	useUserPreferences,
 } from '@woocommerce/data';
 import { recordEvent } from '@woocommerce/tracks';
@@ -48,8 +48,8 @@ export const VariableProductTour: React.FC = () => {
 				EXPERIMENTAL_PRODUCT_VARIATIONS_STORE_NAME
 			);
 			return {
-				totalCount:
-					getProductVariationsTotalCount< number >( requestParams ),
+				// @ts-expect-error Todo: awaiting more global fix, demo: https://github.com/woocommerce/woocommerce/pull/54146
+				totalCount: getProductVariationsTotalCount( requestParams ),
 			};
 		},
 		[ productId ]
@@ -141,12 +141,12 @@ export const VariableProductTour: React.FC = () => {
 	}, [ totalCount ] );
 
 	const { hasShownProductEditorTour } = useSelect( ( select ) => {
-		const { getOption } = select( OPTIONS_STORE_NAME );
+		const { getOption } = select( optionsStore );
 		return {
 			hasShownProductEditorTour:
 				getOption( 'woocommerce_block_product_tour_shown' ) === 'yes',
 		};
-	} );
+	}, [] );
 
 	if (
 		hasShownTour === 'yes' ||

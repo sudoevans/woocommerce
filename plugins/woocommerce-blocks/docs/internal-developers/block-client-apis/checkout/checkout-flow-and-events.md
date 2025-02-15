@@ -59,11 +59,11 @@ You can use them in your component like so
 
 ```jsx
 const { useSelect } = window.wp.data;
-const { CHECKOUT_STORE_KEY } = window.wc.wcBlocksData;
+const { checkoutStore } = window.wc.wcBlocksData;
 
 const MyComponent = ( props ) => {
 	const isComplete = useSelect( ( select ) =>
-		select( CHECKOUT_STORE_KEY ).isComplete()
+		select( checkoutStore ).isComplete()
 	);
 	// do something with isComplete
 };
@@ -107,16 +107,16 @@ The status of the payment lives in the payment data store. You can query the sta
 
 ```jsx
 const { select } = window.wp.data;
-const { PAYMENT_STORE_KEY } = window.wc.wcBlocksData;
+const { paymentStore } = window.wc.wcBlocksData;
 
 const MyComponent = ( props ) => {
-	const isPaymentIdle = select( PAYMENT_STORE_KEY ).isPaymentIdle();
+	const isPaymentIdle = select( paymentStore ).isPaymentIdle();
 	const isExpressPaymentStarted =
-		select( PAYMENT_STORE_KEY ).isExpressPaymentStarted();
+		select( paymentStore ).isExpressPaymentStarted();
 	const isPaymentProcessing =
-		select( PAYMENT_STORE_KEY ).isPaymentProcessing();
-	const isPaymentReady = select( PAYMENT_STORE_KEY ).isPaymentReady();
-	const hasPaymentError = select( PAYMENT_STORE_KEY ).hasPaymentError();
+		select( paymentStore ).isPaymentProcessing();
+	const isPaymentReady = select( paymentStore ).isPaymentReady();
+	const hasPaymentError = select( paymentStore ).hasPaymentError();
 
 	// do something with the boolean values
 };
