@@ -1,7 +1,7 @@
 <?php
 declare( strict_types = 1);
 
-namespace Automattic\WooCommerce\Blocks\Domain\Services\Schema;
+namespace Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFieldsSchema;
 
 use WC_Cart;
 use WC_Customer;
@@ -23,9 +23,21 @@ class DocumentObject {
 	/**
 	 * Docuemnt object context which may adjust the schema response.
 	 *
-	 * @var null|string Examples: shipping_address, billing_address
+	 * @var null|string
 	 */
 	protected $context = null;
+
+	/**
+	 * Valid contexts.
+	 *
+	 * @var array
+	 */
+	protected $valid_contexts = [
+		'shipping_address',
+		'billing_address',
+		'contact',
+		'order',
+	];
 
 	/**
 	 * The cart object.
@@ -79,6 +91,9 @@ class DocumentObject {
 	 * @param null|string $context Context to set.
 	 */
 	public function set_context( $context = null ) {
+		if ( ! in_array( $context, $this->valid_contexts, true ) ) {
+			return;
+		}
 		$this->context = $context;
 	}
 
@@ -148,18 +163,10 @@ class DocumentObject {
 	/**
 	 * Get checkout data.
 	 *
-	 * @return array The order data.
+	 * @return array Checkout data context.
 	 */
 	protected function get_checkout_data() {
-		return wp_parse_args(
-			$this->request_data['checkout'] ?? [],
-			[
-				'create_account'    => false,
-				'customer_note'     => '',
-				'payment_method'    => '',
-				'additional_fields' => [],
-			]
-		);
+		return $this->request_data['checkout'] ?? [];
 	}
 
 	/**
@@ -169,15 +176,16 @@ class DocumentObject {
 	 */
 	protected function get_customer_data() {
 		$customer_data = [
-			'id'               => $this->request_data['customer']['id'] ?? $this->customer->get_id(),
-			'shipping_address' => wp_parse_args(
+			'id'                => $this->request_data['customer']['id'] ?? $this->customer->get_id(),
+			'shipping_address'  => wp_parse_args(
 				$this->request_data['customer']['shipping_address'] ?? [],
 				$this->schema_controller->get( ShippingAddressSchema::IDENTIFIER )->get_item_response( $this->customer )
 			),
-			'billing_address'  => wp_parse_args(
+			'billing_address'   => wp_parse_args(
 				$this->request_data['customer']['billing_address'] ?? [],
 				$this->schema_controller->get( BillingAddressSchema::IDENTIFIER )->get_item_response( $this->customer )
 			),
+			'additional_fields' => $this->request_data['customer']['additional_fields'] ?? [],
 		];
 
 		if ( 'shipping_address' === $this->context ) {

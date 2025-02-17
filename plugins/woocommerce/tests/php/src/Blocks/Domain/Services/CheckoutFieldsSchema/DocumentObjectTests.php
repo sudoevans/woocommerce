@@ -1,9 +1,9 @@
 <?php
 declare( strict_types = 1 );
 
-namespace Automattic\WooCommerce\Tests\Blocks\Domain\Services\Schema;
+namespace Automattic\WooCommerce\Tests\Blocks\Domain\Services\CheckoutFieldsSchema;
 
-use Automattic\WooCommerce\Blocks\Domain\Services\Schema\DocumentObject;
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFieldsSchema\DocumentObject;
 use Yoast\PHPUnitPolyfills\TestCases\TestCase;
 use WC_Customer;
 
@@ -40,8 +40,8 @@ class DocumentObjectTests extends TestCase {
 		$this->assertEquals(
 			$data['customer'],
 			[
-				'id'               => 0,
-				'shipping_address' => [
+				'id'                => 0,
+				'shipping_address'  => [
 					'first_name' => '',
 					'last_name'  => '',
 					'company'    => '',
@@ -53,7 +53,7 @@ class DocumentObjectTests extends TestCase {
 					'country'    => '',
 					'phone'      => '',
 				],
-				'billing_address'  => [
+				'billing_address'   => [
 					'first_name' => '',
 					'last_name'  => '',
 					'company'    => '',
@@ -66,18 +66,10 @@ class DocumentObjectTests extends TestCase {
 					'email'      => '',
 					'phone'      => '',
 				],
-			]
-		);
-		$this->assertEquals(
-			$data['checkout'],
-			[
-				'create_account'    => false,
-				'customer_note'     => '',
-				'payment_method'    => '',
 				'additional_fields' => [],
-
 			]
 		);
+		$this->assertEquals( $data['checkout'], [] );
 	}
 
 	/**
@@ -104,8 +96,8 @@ class DocumentObjectTests extends TestCase {
 		$this->assertEquals(
 			$data['customer'],
 			[
-				'id'               => 1,
-				'shipping_address' => [
+				'id'                => 1,
+				'shipping_address'  => [
 					'first_name' => 'John',
 					'last_name'  => 'Doe',
 					'company'    => '',
@@ -117,7 +109,7 @@ class DocumentObjectTests extends TestCase {
 					'country'    => '',
 					'phone'      => '',
 				],
-				'billing_address'  => [
+				'billing_address'   => [
 					'first_name' => 'Jane',
 					'last_name'  => 'Doe',
 					'company'    => '',
@@ -130,6 +122,7 @@ class DocumentObjectTests extends TestCase {
 					'email'      => '',
 					'phone'      => '',
 				],
+				'additional_fields' => [],
 			]
 		);
 	}

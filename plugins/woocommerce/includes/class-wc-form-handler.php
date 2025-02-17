@@ -337,9 +337,9 @@ class WC_Form_Handler {
 			wp_update_user( $user );
 
 			// Update customer object to keep data in sync.
-			$customer = new WC_Customer( $user->ID );
+			try {
+				$customer = new WC_Customer( $user->ID );
 
-			if ( $customer ) {
 				// Keep billing data in sync if data changed.
 				if ( isset( $user->user_email ) && is_email( $user->user_email ) && $current_email !== $user->user_email ) {
 					$customer->set_billing_email( $user->user_email );
@@ -354,6 +354,18 @@ class WC_Form_Handler {
 				}
 
 				$customer->save();
+			} catch ( WC_Data_Exception $e ) {
+				// These error messages are already translated.
+				wc_add_notice( $e->getMessage(), 'error' );
+			} catch ( \Exception $e ) {
+				wc_add_notice(
+					sprintf(
+						/* translators: %s: Error message. */
+						__( 'An error occurred while saving account details: %s', 'woocommerce' ),
+						esc_html( $e->getMessage() )
+					),
+					'error'
+				);
 			}
 
 			/**

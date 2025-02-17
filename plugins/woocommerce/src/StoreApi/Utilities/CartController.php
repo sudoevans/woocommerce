@@ -480,6 +480,9 @@ class CartController {
 		remove_action( 'woocommerce_check_cart_items', array( $cart, 'check_cart_items' ), 1 );
 		remove_action( 'woocommerce_check_cart_items', array( $cart, 'check_cart_coupons' ), 1 );
 
+		// Before running actions, store notices.
+		$previous_notices = WC()->session->get( 'wc_notices', array() );
+
 		/**
 		 * Fires when cart items are being validated.
 		 *
@@ -495,6 +498,9 @@ class CartController {
 		do_action( 'woocommerce_check_cart_items' );
 
 		$cart_errors = NoticeHandler::convert_notices_to_wp_errors( 'woocommerce_rest_cart_item_error' );
+
+		// Restore notices.
+		WC()->session->set( 'wc_notices', $previous_notices );
 
 		if ( $cart_errors->has_errors() ) {
 			throw new InvalidCartException(

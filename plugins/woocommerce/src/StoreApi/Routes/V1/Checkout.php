@@ -8,8 +8,9 @@ use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
 use Automattic\WooCommerce\StoreApi\Utilities\DraftOrderTrait;
 use Automattic\WooCommerce\Checkout\Helpers\ReserveStockException;
 use Automattic\WooCommerce\StoreApi\Utilities\CheckoutTrait;
-use Automattic\WooCommerce\Blocks\Domain\Services\Schema\DocumentObject;
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFieldsSchema\DocumentObject;
 use Automattic\WooCommerce\Admin\Features\Features;
+
 /**
  * Checkout class.
  */
@@ -85,6 +86,7 @@ class Checkout extends AbstractCartRoute {
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'get_response' ],
 				'permission_callback' => '__return_true',
+				'validate_callback'   => [ $this, 'validate_callback' ],
 				'args'                => array_merge(
 					[
 						'payment_data'      => [
@@ -175,58 +177,164 @@ class Checkout extends AbstractCartRoute {
 	}
 
 	/**
-	 * Validate required additional fields on request.
+	 * Validation callback for the checkout route.
+	 *
+	 * This runs after individual field validation_callbacks have been called.
 	 *
 	 * @param \WP_REST_Request $request Request object.
-	 *
-	 * @throws RouteException When a required additional field is missing.
+	 * @return true|\WP_Error
 	 */
-	public function validate_required_additional_fields( \WP_REST_Request $request ) {
-		$document_object = null;
+	public function validate_callback( $request ) {
+		/**
+		 * The request is cloned to avoid modifying the original request object when sanitizing params.
+		 * Un-sanitized params are used to see if required fields had values, wheras sanitized params are used to
+		 * validate field values.
+		 */
+		$sanitized_request = clone $request;
+		$sanitized_request->sanitize_params();
 
 		if ( Features::is_enabled( 'experimental-blocks' ) ) {
-			$document_object = new DocumentObject(
+			$additional_field_values = $sanitized_request->get_param( 'additional_fields' ) ?? [];
+			$document_object         = new DocumentObject(
 				[
 					'customer' => [
-						'billing_address'  => $request['billing_address'],
-						'shipping_address' => $request['shipping_address'],
+						'billing_address'   => $sanitized_request->get_param( 'billing_address' ),
+						'shipping_address'  => $sanitized_request->get_param( 'shipping_address' ),
+						'additional_fields' => array_intersect_key( $additional_field_values, array_flip( $this->additional_fields_controller->get_contact_fields_keys() ) ),
 					],
 					'checkout' => [
-						'payment_method'    => $request['payment_method'],
-						'create_account'    => $request['create_account'],
-						'customer_note'     => $request['customer_note'],
-						'additional_fields' => $request['additional_fields'],
+						'payment_method'    => $sanitized_request->get_param( 'payment_method' ),
+						'create_account'    => $sanitized_request->get_param( 'create_account' ),
+						'customer_note'     => $sanitized_request->get_param( 'customer_note' ),
+						'additional_fields' => array_intersect_key( $additional_field_values, array_flip( $this->additional_fields_controller->get_order_fields_keys() ) ),
 					],
 				]
 			);
+		} else {
+			$document_object = null;
 		}
 
-		$address_fields = $this->additional_fields_controller->get_fields_for_location( 'address' );
+		$validate_contexts = [
+			'shipping_address' => [
+				'group'    => 'shipping',
+				'location' => 'address',
+				'param'    => 'shipping_address',
+			],
+			'billing_address'  => [
+				'group'    => 'billing',
+				'location' => 'address',
+				'param'    => 'billing_address',
+			],
+			'contact'          => [
+				'group'    => 'other',
+				'location' => 'contact',
+				'param'    => 'additional_fields',
+			],
+			'order'            => [
+				'group'    => 'other',
+				'location' => 'order',
+				'param'    => 'additional_fields',
+			],
+		];
 
-		if ( WC()->cart->needs_shipping() ) {
-			foreach ( $address_fields as $field_key => $field ) {
-				if ( ! isset( $request['shipping_address'][ $field_key ] ) && $this->additional_fields_controller->is_field_required( $field, $document_object, 'shipping_address' ) ) {
-					/* translators: %s: is the field label */
-					throw new RouteException( 'woocommerce_rest_checkout_missing_required_field', esc_html( sprintf( __( 'There was a problem with the provided shipping address: %s is required', 'woocommerce' ), $field['label'] ) ), 400 );
+		if ( ! WC()->cart->needs_shipping() ) {
+			unset( $validate_contexts['shipping_address'] );
+		}
+
+		$invalid_groups  = [];
+		$invalid_details = [];
+		$is_partial      = in_array( $request->get_method(), [ 'PUT', 'PATCH' ], true );
+
+		foreach ( $validate_contexts as $context => $context_data ) {
+			$errors            = new \WP_Error();
+			$additional_fields = $this->additional_fields_controller->get_fields_for_location( $context_data['location'] );
+
+			// These values are used to see if required fields have values.
+			$field_values = (array) $request->get_param( $context_data['param'] ) ?? [];
+
+			// These values are used to validate custom rules and generate the document object.
+			$sanitized_field_values = (array) $sanitized_request->get_param( $context_data['param'] ) ?? [];
+
+			foreach ( $additional_fields as $field_key => $field ) {
+				$is_required = $this->additional_fields_controller->is_required_field( $field, $document_object, $context );
+
+				// Skip optional fields that are not set when the request is partial.
+				if ( ! isset( $field_values[ $field_key ] ) && ( $is_partial || ! $is_required ) ) {
+					continue;
+				}
+
+				// Clean the field value to trim whitespace.
+				$field_value           = wc_clean( wp_unslash( $field_values[ $field_key ] ?? '' ) );
+				$sanitized_field_value = $sanitized_field_values[ $field_key ] ?? '';
+
+				if ( empty( $field_value ) ) {
+					if ( $is_required ) {
+						/* translators: %s: is the field label */
+						$error_message = sprintf( __( '%s is required', 'woocommerce' ), $field['label'] );
+						if ( 'shipping_address' === $context ) {
+							/* translators: %s: is the field error message */
+							$error_message = sprintf( __( 'There was a problem with the provided shipping address: %s', 'woocommerce' ), $error_message );
+						} elseif ( 'billing_address' === $context ) {
+							/* translators: %s: is the field error message */
+							$error_message = sprintf( __( 'There was a problem with the provided billing address: %s', 'woocommerce' ), $error_message );
+						}
+						$errors->add( 'woocommerce_required_checkout_field', $error_message );
+					}
+					continue;
+				}
+
+				$valid_check = $this->additional_fields_controller->validate_field( $field_key, $sanitized_field_value, $document_object, $context );
+
+				if ( is_wp_error( $valid_check ) && $valid_check->has_errors() ) {
+					foreach ( $valid_check->get_error_codes() as $code ) {
+						$valid_check->add_data(
+							array(
+								'location' => $context_data['location'],
+								'key'      => $field_key,
+							),
+							$code
+						);
+					}
+					$errors->merge_from( $valid_check );
+					continue;
 				}
 			}
-		}
 
-		foreach ( $address_fields as $field_key => $field ) {
-			if ( ! isset( $request['billing_address'][ $field_key ] ) && $this->additional_fields_controller->is_field_required( $field, $document_object, 'billing_address' ) ) {
-				/* translators: %s: is the field label */
-				throw new RouteException( 'woocommerce_rest_checkout_missing_required_field', esc_html( sprintf( __( 'There was a problem with the provided billing address: %s is required', 'woocommerce' ), $field['label'] ) ), 400 );
+			// Validate all fields for this location (this runs custom validation callbacks).
+			$valid_location_check = $this->additional_fields_controller->validate_fields_for_location( $sanitized_field_values, $context_data['location'], $context_data['group'] );
+
+			if ( is_wp_error( $valid_location_check ) && $valid_location_check->has_errors() ) {
+				foreach ( $valid_location_check->get_error_codes() as $code ) {
+					$valid_location_check->add_data(
+						array(
+							'location' => $context_data['location'],
+						),
+						$code
+					);
+				}
+				$errors->merge_from( $valid_location_check );
+			}
+
+			if ( $errors->has_errors() ) {
+				$invalid_groups[ $context_data['param'] ]  = $errors->get_error_message();
+				$invalid_details[ $context_data['param'] ] = rest_convert_error_to_response( $errors )->get_data();
 			}
 		}
 
-		$other_fields = $this->additional_fields_controller->get_fields_for_group( 'other' );
-
-		foreach ( $other_fields as $field_key => $field ) {
-			if ( ! isset( $request['additional_fields'][ $field_key ] ) && $this->additional_fields_controller->is_field_required( $field, $document_object ) ) {
-				/* translators: %s: is the field label */
-				throw new RouteException( 'woocommerce_rest_checkout_missing_required_field', esc_html( sprintf( __( 'There was a problem with the provided additional fields: %s is required', 'woocommerce' ), $field['label'] ) ), 400 );
-			}
+		if ( $invalid_groups ) {
+			return new \WP_Error(
+				'rest_invalid_param',
+				/* translators: %s: List of invalid parameters. */
+				esc_html( sprintf( __( 'Invalid parameter(s): %s', 'woocommerce' ), implode( ', ', array_keys( $invalid_groups ) ) ) ),
+				array(
+					'status'  => 400,
+					'params'  => $invalid_groups,
+					'details' => $invalid_details,
+				)
+			);
 		}
+
+		return true;
 	}
 
 	/**
@@ -265,11 +373,6 @@ class Checkout extends AbstractCartRoute {
 		 * Validate items and fix violations before the order is processed.
 		 */
 		$this->cart_controller->validate_cart();
-
-		/**
-		 * Validate additional fields on request.
-		 */
-		$this->validate_required_additional_fields( $request );
 
 		/**
 		 * Persist customer session data from the request first so that OrderController::update_addresses_from_cart

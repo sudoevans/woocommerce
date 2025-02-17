@@ -1891,7 +1891,7 @@ class AdditionalFields extends MockeryTestCase {
 		$data     = $response->get_data();
 
 		$this->assertEquals( 400, $response->get_status(), print_r( $data, true ) );
-		$this->assertEquals( \sprintf( 'There was a problem with the provided shipping address: %s is required', $label ), $data['message'], print_r( $data, true ) );
+		$this->assertEquals( \sprintf( 'There was a problem with the provided shipping address: %s is required', $label ), $data['data']['details']['shipping_address']['message'], print_r( $data, true ) );
 
 		$request = new \WP_REST_Request( 'POST', '/wc/store/v1/checkout' );
 		$request->set_header( 'Nonce', wp_create_nonce( 'wc_store_api' ) );
@@ -2025,7 +2025,7 @@ class AdditionalFields extends MockeryTestCase {
 
 		// The product is downloadable, but not virtual, so should still require a shipping address.
 		$this->assertEquals( 400, $response->get_status(), print_r( $data, true ) );
-		$this->assertEquals( 'There was a problem with the provided shipping address: Government ID is required', $data['message'], print_r( $data, true ) );
+		$this->assertEquals( 'There was a problem with the provided shipping address: Government ID is required', $data['data']['details']['shipping_address']['message'], print_r( $data, true ) );
 	}
 
 	/**

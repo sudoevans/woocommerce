@@ -2,6 +2,8 @@
 
 namespace Automattic\WooCommerce\Blocks\Domain\Services;
 
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFieldsSchema\DocumentObject;
+use Automattic\WooCommerce\Admin\Features\Features;
 use WC_Customer;
 use WC_Order;
 
@@ -38,7 +40,6 @@ class CheckoutFieldsFrontend {
 		add_action( 'woocommerce_my_account_after_my_address', array( $this, 'render_address_fields' ), 10, 1 );
 
 		// Edit account form under my account (for contact details).
-		add_filter( 'woocommerce_save_account_details_required_fields', array( $this, 'edit_account_form_required_fields' ), 10, 1 );
 		add_filter( 'woocommerce_edit_account_form_fields', array( $this, 'edit_account_form_fields' ), 10, 1 );
 		add_action( 'woocommerce_save_account_details', array( $this, 'save_account_form_fields' ), 10, 1 );
 
@@ -135,24 +136,6 @@ class CheckoutFieldsFrontend {
 	}
 
 	/**
-	 * Register required additional contact fields.
-	 *
-	 * @param array $fields Required fields.
-	 * @return array
-	 */
-	public function edit_account_form_required_fields( $fields ) {
-		$additional_fields = $this->checkout_fields_controller->get_fields_for_location( 'contact' );
-
-		foreach ( $additional_fields as $key => $field ) {
-			if ( ! empty( $field['required'] ) ) {
-				$fields[ $key ] = $field['label'];
-			}
-		}
-
-		return $fields;
-	}
-
-	/**
 	 * Adds additional contact fields to the My Account edit account form.
 	 */
 	public function edit_account_form_fields() {
@@ -174,7 +157,7 @@ class CheckoutFieldsFrontend {
 				$form_field['unchecked_value'] = '0';
 			}
 
-			woocommerce_form_field( $key, $form_field, wc_get_post_data_by_key( $key, $form_field['value'] ) );
+			woocommerce_form_field( $field_key, $form_field, wc_get_post_data_by_key( $key, $form_field['value'] ) );
 		}
 	}
 
@@ -186,42 +169,27 @@ class CheckoutFieldsFrontend {
 	 * @param integer $user_id User ID.
 	 */
 	public function save_account_form_fields( $user_id ) {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$customer          = new WC_Customer( $user_id );
-		$additional_fields = $this->checkout_fields_controller->get_fields_for_location( 'contact' );
-		$field_values      = array();
+		try {
+			$customer = new WC_Customer( $user_id );
+			$result   = $this->update_additional_fields_for_customer( $customer, 'contact', 'other' );
 
-		foreach ( array_keys( $additional_fields ) as $key ) {
-			$post_key = CheckoutFields::get_group_key( 'other' ) . $key;
-			if ( ! isset( $_POST[ $post_key ] ) ) {
-				continue;
+			if ( is_wp_error( $result ) ) {
+				foreach ( $result->get_error_messages() as $error_message ) {
+					wc_add_notice( $error_message, 'error' );
+				}
 			}
 
-			$field_value = $this->checkout_fields_controller->sanitize_field( $key, wc_clean( wp_unslash( $_POST[ $post_key ] ) ) );
-			$validation  = $this->checkout_fields_controller->validate_field( $key, $field_value );
-
-			if ( is_wp_error( $validation ) && $validation->has_errors() ) {
-				wc_add_notice( $validation->get_error_message(), 'error' );
-				continue;
-			}
-
-			$field_values[ $key ] = $field_value;
+			$customer->save();
+		} catch ( \Exception $e ) {
+			wc_add_notice(
+				sprintf(
+					/* translators: %s: Error message. */
+					__( 'An error occurred while saving account details: %s', 'woocommerce' ),
+					esc_html( $e->getMessage() )
+				),
+				'error'
+			);
 		}
-
-		// Persist individual additional fields to customer.
-		foreach ( $field_values as $key => $value ) {
-			$this->checkout_fields_controller->persist_field_for_customer( $key, $value, $customer, 'other' );
-		}
-
-		// Validate all fields for this location.
-		$location_validation = $this->checkout_fields_controller->validate_fields_for_location( $field_values, 'contact', 'other' );
-
-		if ( is_wp_error( $location_validation ) && $location_validation->has_errors() ) {
-			wc_add_notice( $location_validation->get_error_message(), 'error' );
-		}
-
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
-		$customer->save();
 	}
 
 	/**
@@ -273,39 +241,109 @@ class CheckoutFieldsFrontend {
 	 * @param WC_Customer $customer Customer object.
 	 */
 	public function save_address_fields( $user_id, $address_type, $address, $customer ) {
+		try {
+			$result = $this->update_additional_fields_for_customer( $customer, 'address', $address_type );
+
+			if ( is_wp_error( $result ) ) {
+				foreach ( $result->get_error_messages() as $error_message ) {
+					wc_add_notice( $error_message, 'error' );
+				}
+			}
+		} catch ( \Exception $e ) {
+			wc_add_notice(
+				sprintf(
+					/* translators: %s: Error message. */
+					__( 'An error occurred while saving address details: %s', 'woocommerce' ),
+					esc_html( $e->getMessage() )
+				),
+				'error'
+			);
+		}
+	}
+
+	/**
+	 * Validate and save additional fields for a given customer.
+	 *
+	 * @param WC_Customer $customer Customer object.
+	 * @param string      $location Location to save fields for.
+	 * @param string      $group Group to save fields for.
+	 * @return true|\WP_Error True if successful, \WP_Error if there are errors.
+	 */
+	protected function update_additional_fields_for_customer( $customer, $location, $group ) {
+		$errors            = new \WP_Error();
+		$additional_fields = $this->checkout_fields_controller->get_fields_for_location( $location );
+
+		// Get all values from the POST request before validating.
+		$field_values           = []; // These values are used to see if required fields have values.
+		$sanitized_field_values = []; // These values are used to validate custom rules, generate the document object, and save fields to the account.
+
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$additional_fields = $this->checkout_fields_controller->get_fields_for_location( 'address' );
-		$field_values      = array();
-
-		foreach ( array_keys( $additional_fields ) as $key ) {
-			$post_key = CheckoutFields::get_group_key( $address_type ) . $key;
-
-			if ( ! isset( $_POST[ $post_key ] ) ) {
-				continue;
-			}
-
-			$field_value = $this->checkout_fields_controller->sanitize_field( $key, wc_clean( wp_unslash( $_POST[ $post_key ] ) ) );
-			$validation  = $this->checkout_fields_controller->validate_field( $key, $field_value );
-
-			if ( is_wp_error( $validation ) && $validation->has_errors() ) {
-				wc_add_notice( $validation->get_error_message(), 'error' );
-				continue;
-			}
-
-			$field_values[ $key ] = $field_value;
-		}
-
-		// Persist individual additional fields to customer.
-		foreach ( $field_values as $key => $value ) {
-			$this->checkout_fields_controller->persist_field_for_customer( $key, $value, $customer, $address_type );
-		}
-
-		// Validate all fields for this location.
-		$location_validation = $this->checkout_fields_controller->validate_fields_for_location( array_merge( $address, $field_values ), 'address', $address_type );
-
-		if ( is_wp_error( $location_validation ) && $location_validation->has_errors() ) {
-			wc_add_notice( $location_validation->get_error_message(), 'error' );
+		foreach ( $additional_fields as $field_key => $field_data ) {
+			$post_key                             = CheckoutFields::get_group_key( $group ) . $field_key;
+			$field_values[ $field_key ]           = wc_clean( wp_unslash( $_POST[ $post_key ] ?? '' ) );
+			$sanitized_field_values[ $field_key ] = $this->checkout_fields_controller->sanitize_field( $field_key, $field_values[ $field_key ] );
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		$document_object         = null;
+		$document_object_context = 'address' === $location ? $group . '_address' : $location;
+
+		if ( Features::is_enabled( 'experimental-blocks' ) ) {
+			$document_object_key = 'address' === $location ? $group . '_address' : 'additional_fields';
+			$document_object     = new DocumentObject(
+				[
+					'customer' => [
+						$document_object_key => $sanitized_field_values,
+					],
+				]
+			);
+		}
+
+		// Holds values to be persisted to the customer object.
+		$persist_fields = [];
+
+		// Validate individual fields agains the document object. Errors are added to the $errors object, and each field is validated regardless of other field errors.
+		foreach ( $additional_fields as $field_key => $field_data ) {
+			$field_value = $field_values[ $field_key ];
+			$is_required = $this->checkout_fields_controller->is_required_field( $field_key, $document_object, $document_object_context );
+
+			if ( empty( $field_value ) ) {
+				if ( $is_required ) {
+					$errors->add(
+						'required_field',
+						/* translators: %s: is the field label */
+						sprintf( __( '%s is required', 'woocommerce' ), '<strong>' . $field_data['label'] . '</strong>' )
+					);
+					continue;
+				}
+				$persist_fields[ $field_key ] = '';
+				continue;
+			}
+
+			$sanitized_field_value = $sanitized_field_values[ $field_key ];
+			$valid_check           = $this->checkout_fields_controller->validate_field( $field_key, $sanitized_field_value, $document_object, $document_object_context );
+
+			if ( is_wp_error( $valid_check ) && $valid_check->has_errors() ) {
+				// Get one error message from the WP_Error object per field to avoid overlapping error messages.
+				$errors->add( $valid_check->get_error_code(), $valid_check->get_error_message() );
+				continue;
+			}
+
+			$persist_fields[ $field_key ] = $sanitized_field_value;
+		}
+
+		// Validate all fields for this location (this runs custom validation callbacks). If an error is found, no values will be persisted to the customer object.
+		$location_validation = $this->checkout_fields_controller->validate_fields_for_location( $sanitized_field_values, $location, $group );
+
+		if ( is_wp_error( $location_validation ) && $location_validation->has_errors() ) {
+			$errors->merge_from( $location_validation );
+			return $errors;
+		}
+
+		foreach ( $persist_fields as $field_key => $field_value ) {
+			$this->checkout_fields_controller->persist_field_for_customer( $field_key, $field_value, $customer, $group );
+		}
+
+		return $errors->has_errors() ? $errors : true;
 	}
 }
