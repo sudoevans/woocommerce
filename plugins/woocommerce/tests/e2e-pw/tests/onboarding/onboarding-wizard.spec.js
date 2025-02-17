@@ -481,7 +481,7 @@ test.describe(
 	'Store owner can skip the core profiler',
 	{ tag: tags.SKIP_ON_EXTERNAL_ENV },
 	() => {
-		test( 'Can click skip guided setup', async ( { page } ) => {
+		test( 'Can skip the guided setup', async ( { page } ) => {
 			await page.goto(
 				'wp-admin/admin.php?page=wc-admin&path=%2Fsetup-wizard'
 			);
@@ -522,57 +522,6 @@ test.describe(
 						.getByRole( 'menuitem' )
 						.filter( { hasText: 'coming soon' } )
 				).toBeVisible();
-			} );
-		} );
-
-		// TODO (E2E Audit): Move this test to the merchant folder as per the Critical Flows list on GitHub. This test should NOT be skipped on WPCOM. Newly created WPCOM sites are not connected to WooCommerce.com by default.
-		test( 'Can connect to WooCommerce.com', async ( { page } ) => {
-			await test.step( 'Go to WC Home and make sure the total sales is visible', async () => {
-				await page.goto( 'wp-admin/admin.php?page=wc-admin' );
-				await page
-					.getByRole( 'menuitem', { name: 'Total sales' } )
-					.waitFor( { state: 'visible' } );
-			} );
-
-			await test.step( 'Go to the extensions tab and connect store', async () => {
-				const connectButton = page.getByRole( 'link', {
-					name: 'Connect',
-				} );
-				await page.goto(
-					'wp-admin/admin.php?page=wc-admin&tab=my-subscriptions&path=%2Fextensions'
-				);
-				const waitForSubscriptionsResponse = page.waitForResponse(
-					( response ) =>
-						response
-							.url()
-							.includes(
-								'/wp-json/wc/v3/marketplace/subscriptions'
-							) && response.status() === 200
-				);
-				await expect(
-					page.getByText(
-						'Hundreds of vetted products and services. Unlimited potential.'
-					)
-				).toBeVisible();
-				await expect(
-					page.getByRole( 'button', { name: 'My Subscriptions' } )
-				).toBeVisible();
-				await expect( connectButton ).toBeVisible();
-				await waitForSubscriptionsResponse;
-				await expect( connectButton ).toHaveAttribute(
-					'href',
-					/my-subscriptions/
-				);
-				await connectButton.click();
-			} );
-
-			await test.step( 'Check that we are sent to wp.com', async () => {
-				await expect( page.url() ).toContain( 'wordpress.com/log-in' );
-				await expect(
-					page.getByRole( 'heading', {
-						name: 'Log in to your account',
-					} )
-				).toBeVisible( { timeout: 30000 } );
 			} );
 		} );
 	}

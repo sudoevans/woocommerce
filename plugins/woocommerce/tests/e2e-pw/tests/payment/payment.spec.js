@@ -3,11 +3,7 @@ const { ADMIN_STATE_PATH } = require( '../../playwright.config' );
 
 const test = baseTest.extend( {
 	storageState: ADMIN_STATE_PATH,
-	page: async ( { api, page, wpApi, wcAdminApi }, use ) => {
-		await wcAdminApi.post( 'onboarding/profile', {
-			skipped: true,
-		} );
-
+	page: async ( { api, page, wpApi }, use ) => {
 		// Ensure store's base country location is a WooPayments non-supported country (AF).
 		// Otherwise, the WooPayments task page logic or WooPayments redirects will kick in.
 		const initialDefaultCountry = await api.get(
@@ -95,19 +91,6 @@ test.describe( 'Payment setup task', () => {
 					'//tr[@data-gateway_id="bacs"]/td[@class="status"]/a'
 				)
 			).toHaveClass( 'wc-payment-gateway-method-toggle-enabled' );
-		}
-	);
-
-	//todo audit follow-up: maybe the better place for this test is activate-and-setup/task-list.spec.js
-	test(
-		'Can visit the payment setup task from the homescreen if the setup wizard has been skipped',
-		{ tag: [ tags.NOT_E2E ] },
-		async ( { page } ) => {
-			await page.goto( 'wp-admin/admin.php?page=wc-admin' );
-			await page.getByRole( 'button', { name: '3 Get paid' } ).click();
-			await expect(
-				page.locator( '.woocommerce-layout__header-wrapper > h1' )
-			).toHaveText( 'Get paid' );
 		}
 	);
 

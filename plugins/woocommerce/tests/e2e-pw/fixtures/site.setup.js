@@ -4,6 +4,7 @@
 import { test as setup } from './fixtures';
 import { ADMIN_STATE_PATH } from '../playwright.config';
 import { setComingSoon } from '../utils/coming-soon';
+import { skipOnboardingWizard } from '../utils/onboarding';
 
 setup.use( { storageState: ADMIN_STATE_PATH } );
 
@@ -103,6 +104,10 @@ setup( 'convert Cart and Checkout pages to shortcode', async ( { wpApi } ) => {
 
 setup( 'disable coming soon', async ( { baseURL } ) => {
 	await setComingSoon( { baseURL, enabled: 'no' } );
+} );
+
+setup( 'disable onboarding wizard', async () => {
+	await skipOnboardingWizard();
 } );
 
 setup( 'determine if multisite', async ( { api } ) => {

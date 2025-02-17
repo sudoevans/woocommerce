@@ -123,7 +123,6 @@ export default defineConfig( {
 			name: 'e2e',
 			testIgnore: '**/api-tests/**',
 			dependencies: [ 'site setup' ],
-			fullyParallel: true,
 		},
 		{
 			name: 'api',
