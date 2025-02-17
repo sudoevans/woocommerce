@@ -11,11 +11,11 @@ concurrency:
 
 jobs:
     add-testing-instructions-review-comment:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         permissions:
             pull-requests: write
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
 
             - name: Setup Node.js
               uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
