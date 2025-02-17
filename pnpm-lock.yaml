@@ -2903,6 +2903,9 @@ importers:
       '@types/wordpress__blocks':
         specifier: 11.0.7
         version: 11.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@woocommerce/navigation':
+        specifier: workspace:*
+        version: link:../navigation
       '@woocommerce/product-editor':
         specifier: workspace:^
         version: link:../product-editor

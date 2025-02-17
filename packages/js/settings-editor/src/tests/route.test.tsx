@@ -65,6 +65,7 @@ const mockSettingsPages = {
 		},
 	},
 	start: null,
+	_wpnonce: 'test-nonce',
 };
 
 describe( 'route.tsx', () => {
@@ -148,6 +149,7 @@ describe( 'route.tsx', () => {
 							},
 						},
 						start: null,
+						_wpnonce: 'test-nonce',
 					},
 				},
 			};
