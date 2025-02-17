@@ -65,8 +65,15 @@ export const EmailPreviewIframe: React.FC< EmailPreviewIframeProps > = ( {
 			handlers[ id ] = debounce( handleFieldChange, 400 );
 			const field = jQuery( `#${ id }` );
 			if ( field.length ) {
-				// Using jQuery events due to select2 and iris (color picker) usage
-				field.on( 'change', handlers[ id ] );
+				if ( field.hasClass( 'wc-enhanced-select' ) ) {
+					// For select2 fields, only bind change event once initialized
+					field.one( 'select2:open', () => {
+						field.on( 'change', handlers[ id ] );
+					} );
+				} else {
+					// Using jQuery events due to select2 and iris (color picker) usage
+					field.on( 'change', handlers[ id ] );
+				}
 			}
 		} );
 
