@@ -38,12 +38,13 @@ export const Form = ( {
 		const formData: Record< string, string > = {};
 
 		formElements.forEach( ( input ) => {
+			const key = input.name || input.id;
 			// Avoid generic Gutenberg input ids. This will require upstream fixes.
-			if ( input.id.startsWith( 'inspector-' ) ) {
+			if ( ! key || input.id?.startsWith( 'inspector-' ) ) {
 				return;
 			}
 
-			formData[ input.name || input.id ] = input.value;
+			formData[ key ] = input.value;
 		} );
 
 		return formData;
