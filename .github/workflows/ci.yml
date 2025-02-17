@@ -7,8 +7,10 @@ on:
       - '**/changelog/**'
       - '.cursor/**'
       - '**/*.md'
-      - 'changelog.txt'
+      - '**/changelog.txt'
       - '.gitignore'
+      - '.github/**'
+      - '!.github/workflows/ci.yml'
     branches:
       - 'trunk'
       - 'release/*'
