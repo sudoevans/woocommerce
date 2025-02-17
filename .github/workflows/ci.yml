@@ -495,13 +495,13 @@ jobs:
         run: php tools/monorepo/check-changelogger-use.php --debug "$BASE" "$HEAD"
 
       - name: 'Validate - existing entries'
-        run: pnpm --recursive --parallel --stream changelog validate
+        run: composer global require automattic/jetpack-changelogger:3.3.0 --quiet && pnpm --recursive --parallel --stream changelog validate
 
   validate-markdown:
     name: 'Validate markdown'
     if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'trunk' && needs.identify-jobs-to-run.outputs.needs-markdown-validation == 'true' }}
     needs: [ 'identify-jobs-to-run' ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
 
