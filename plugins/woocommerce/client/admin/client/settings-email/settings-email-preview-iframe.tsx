@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { debounce } from 'lodash';
 
 /**
@@ -26,6 +26,7 @@ export const EmailPreviewIframe: React.FC< EmailPreviewIframeProps > = ( {
 } ) => {
 	const [ counter, setCounter ] = useState( 0 );
 	const nonce = emailPreviewNonce();
+	const iframeRef = useRef< HTMLIFrameElement | null >( null );
 
 	useEffect( () => {
 		const handleFieldChange = async ( jqEvent: JQuery.Event ) => {
@@ -47,6 +48,13 @@ export const EmailPreviewIframe: React.FC< EmailPreviewIframeProps > = ( {
 			} finally {
 				target.dispatchEvent( new Event( 'transient-saved' ) );
 				setCounter( ( prevCounter ) => prevCounter + 1 );
+
+				// Update iframe src using replace to avoid polluting browser history
+				if ( iframeRef.current ) {
+					iframeRef.current.contentWindow?.location.replace(
+						`${ src }&hash=${ counter + 1 }`
+					);
+				}
 			}
 		};
 
@@ -76,8 +84,9 @@ export const EmailPreviewIframe: React.FC< EmailPreviewIframeProps > = ( {
 	return (
 		<div>
 			<iframe
+				ref={ iframeRef }
 				className={ isLoading ? 'iframe-is-loading' : '' }
-				src={ `${ src }&hash=${ counter }` }
+				src={ src }
 				title={ __( 'Email preview frame', 'woocommerce' ) }
 				onLoad={ () => setIsLoading( false ) }
 			/>
