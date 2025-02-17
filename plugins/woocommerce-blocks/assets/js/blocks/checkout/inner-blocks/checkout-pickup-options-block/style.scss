@@ -30,15 +30,32 @@
 				font-style: inherit;
 			}
 		}
+		.wc-block-components-radio-control__option-checked {
+			.wc-block-components-radio-control__description-group {
+				.read-more-content {
+					margin-left: em($gap-small * 0.25);
+					position: initial;
+					visibility: visible;
+					z-index: initial;
+					hyphens: auto;
+					word-break: normal;
+				}
+			}
+		}
 		.wc-block-components-radio-control__description-group {
 			display: block;
 			width: calc(100% + em($gap-huge / 0.875));
 			box-sizing: border-box;
 			border-radius: $universal-border-radius;
-			padding: 0 em($gap);
+			padding: 1px em($gap-small);
 			margin-left: -(em($gap-huge));
 			margin-top: em($gap);
 			@include font-size(regular);
+			.read-more-content {
+				position: absolute;
+				visibility: hidden;
+				z-index: -1;
+			}
 		}
 		.wc-block-components-radio-control__description,
 		.wc-block-components-radio-control__secondary-description {
@@ -62,18 +79,6 @@
 				vertical-align: middle;
 				margin-top: -4px;
 				fill: currentColor;
-			}
-		}
-		.wc-block-components-radio-control__description-group {
-			.wc-block-components-radio-control__secondary-description {
-				display: none;
-			}
-		}
-		.wc-block-components-radio-control__option-checked {
-			.wc-block-components-radio-control__description-group {
-				.wc-block-components-radio-control__secondary-description {
-					display: block;
-				}
 			}
 		}
 	}
