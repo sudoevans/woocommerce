@@ -65,6 +65,7 @@ function getFakeCategory( options = { extraRandomTerm: false } ) {
 }
 
 module.exports = {
+	getFakeUser,
 	getFakeCustomer,
 	getFakeProduct,
 	getFakeCategory,
