@@ -153,7 +153,7 @@
           "menu_title": "Frequently Asked Questions",
           "tags": "reference",
           "edit_url": "https://github.com/woocommerce/woocommerce/edit/trunk/docs/cart-and-checkout-blocks/faq.md",
-          "hash": "99b5533f684f62498098d55a6ba1e2dba71664cca7cf35d8c4272dd24d6686fa",
+          "hash": "3289920c5224a5c392617620b839df1454431257abf2162744b1fa9040314378",
           "url": "https://raw.githubusercontent.com/woocommerce/woocommerce/trunk/docs/cart-and-checkout-blocks/faq.md",
           "id": "041787aca25af363a5eff3e710bd669cc8aebc4b",
           "links": {
@@ -804,7 +804,7 @@
           "menu_title": "Implement merchant onboarding",
           "tags": "how-to",
           "edit_url": "https://github.com/woocommerce/woocommerce/edit/trunk/docs/extension-development/handling-merchant-onboarding.md",
-          "hash": "cf114c1eb1094cd80eb2254d7b506b3c7cd8cbc7ccdddf6fd05d70f1735b09ef",
+          "hash": "b91ddd5c7535716f03dee5e650001eb3e1f63fcdf54c73e41f320041793ffc0d",
           "url": "https://raw.githubusercontent.com/woocommerce/woocommerce/trunk/docs/extension-development/handling-merchant-onboarding.md",
           "id": "89fe15dc232379f546852822230c334d3d940b93"
         },
@@ -1935,5 +1935,5 @@
       "categories": []
     }
   ],
-  "hash": "d822f4e74fb1ff0c5caae9516c63bca4b043a557a35f2a9746e65e2ba9fff5ae"
+  "hash": "54e68eead4fab95dd4bc567b3c258922c5de2e2fc488d18217998bf94c3c4184"
 }
