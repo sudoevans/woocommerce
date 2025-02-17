@@ -9,7 +9,7 @@ use _WP_Dependency;
 use Automattic\WooCommerce\Admin\Features\Features;
 use Automattic\WooCommerce\Admin\PageController;
 use Automattic\WooCommerce\Internal\Admin\Loader;
-
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
 /**
  * WCAdminAssets Class.
  */
@@ -322,6 +322,12 @@ class WCAdminAssets {
 					str_starts_with( wc_clean( wp_unslash( $_GET['path'] ) ), '/customize-store' )
 				);
 				if ( ! $is_customize_store_page && WC_ADMIN_APP === $script ) {
+					$script_assets['dependencies'] = array_diff( $script_assets['dependencies'], array( 'wp-editor' ) );
+				}
+
+				// Remove wp-editor dependency if the product editor feature is disabled as we don't need it.
+				$is_product_data_view_page = \Automattic\WooCommerce\Admin\Features\ProductDataViews\Init::is_product_data_view_page();
+				if ( 'wc-product-editor' === $script && ! ( FeaturesUtil::feature_is_enabled( 'product_block_editor' ) || $is_product_data_view_page ) ) {
 					$script_assets['dependencies'] = array_diff( $script_assets['dependencies'], array( 'wp-editor' ) );
 				}
 
