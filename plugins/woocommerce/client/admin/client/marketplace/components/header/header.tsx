@@ -18,7 +18,7 @@ export default function Header() {
 			/>
 			<Search />
 			<div className="woocommerce-marketplace__header-meta">
-				<HeaderAccount />
+				<HeaderAccount page="wc-addons" />
 			</div>
 		</header>
 	);

@@ -28,12 +28,11 @@ class WC_Helper_Admin {
 	 */
 	public static function load() {
 		if ( is_admin() ) {
-			$is_in_app_marketplace = (
+			$is_wc_home_or_in_app_marketplace = (
 				isset( $_GET['page'] ) && 'wc-admin' === $_GET['page'] //phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				&& isset( $_GET['path'] ) && '/extensions' === $_GET['path'] //phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			);
 
-			if ( $is_in_app_marketplace ) {
+			if ( $is_wc_home_or_in_app_marketplace ) {
 				add_filter( 'woocommerce_admin_shared_settings', array( __CLASS__, 'add_marketplace_settings' ) );
 			}
 		}
@@ -106,6 +105,8 @@ class WC_Helper_Admin {
 	public static function get_connection_url() {
 		global $current_screen;
 
+		// Default to wc-addons, although this can be changed from the frontend
+		// in the function `connectUrl()` within marketplace functions.tsx.
 		$connect_url_args = array(
 			'page'    => 'wc-addons',
 			'section' => 'helper',
