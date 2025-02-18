@@ -241,60 +241,31 @@ $wc-setting-email-width: 634px;
 	}
 }
 
-.wc-settings-email-image-url-new-image {
+.wc-settings-email-select-image {
 	border: 1px #ccc solid;
 	border-radius: 4px;
-	width: 400px;
-	height: 88px;
+	box-sizing: border-box;
+	margin-bottom: 8px;
+	min-height: 88px;
+	padding: 10px;
 	position: relative;
+	width: 400px;
 
 	&:hover {
-		filter: brightness(0.87);
-	}
-
-	button.wc-settings-email-image-url-select-image {
-		background-color: transparent;
-		border: none;
-		display: block;
-		height: 100%;
-		width: 100%;
-
-		&:hover {
-			cursor: pointer;
-		}
-	}
-
-	img.wc-settings-email-image-url-new-image-icon {
-		position: absolute;
-		inset: 0;
-		margin: auto;
+		border-color: #999;
+		cursor: pointer;
 	}
 }
 
-.wc-settings-email-image-url-existing-image {
-	> div {
-		margin-bottom: 8px;
-	}
+.wc-settings-email-select-image-icon {
+	inset: 0;
+	margin: auto;
+	position: absolute;
+}
 
-	.wc-settings-email-image-url-image-preview {
-		max-width: 400px;
-		border: 1px #ccc solid;
-		border-radius: 4px;
-
-		&:hover {
-			cursor: pointer;
-		}
-	}
-
-	button.wc-settings-email-image-url-select-image:not(.button) {
-		background-color: transparent;
-		border: none;
-		padding: 0;
-
-		&:focus {
-			box-shadow: none;
-		}
-	}
+.wc-settings-email-logo-image {
+	max-height: 160px;
+	max-width: 100%;
 }
 
 .wc-settings-email-color-palette-separator {

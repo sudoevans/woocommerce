@@ -314,7 +314,7 @@ test.describe( 'WooCommerce Email Settings', () => {
 		{ tag: [ tags.COULD_BE_LOWER_LEVEL_TEST ] },
 		async ( { page, baseURL } ) => {
 			const emailImageUrlElement =
-				'#wc_settings_email_image_url_slotfill .wc-settings-email-image-url-select-image';
+				'#wc_settings_email_image_url_slotfill .wc-settings-email-select-image';
 			const hasImageUrl = async () => {
 				return (
 					( await page.locator( emailImageUrlElement ).count() ) > 0
@@ -346,30 +346,26 @@ test.describe( 'WooCommerce Email Settings', () => {
 		page,
 		baseURL,
 	} ) => {
-		const newImageElement = '.wc-settings-email-image-url-new-image';
-		const existingImageElement =
-			'.wc-settings-email-image-url-existing-image';
-		const selectImageElement = '.wc-settings-email-image-url-select-image';
+		const logoImageElement = '.wc-settings-email-logo-image';
+		const uploadIconElement = '.wc-settings-email-select-image-icon';
 
 		// Enable the email_improvements feature flag
 		await setFeatureFlag( baseURL, 'yes' );
 		await page.goto( 'wp-admin/admin.php?page=wc-settings&tab=email' );
 
 		// Pick image
-		await page
-			.locator( `${ newImageElement } ${ selectImageElement }` )
-			.click();
+		await page.locator( '.wc-settings-email-select-image' ).click();
 		await pickImageFromLibrary( page, 'image-03' );
-		await expect( page.locator( existingImageElement ) ).toBeVisible();
-		await expect( page.locator( newImageElement ) ).toBeHidden();
+		await expect( page.locator( logoImageElement ) ).toBeVisible();
+		await expect( page.locator( uploadIconElement ) ).toBeHidden();
 
 		// Remove an image
 		await page
-			.locator( existingImageElement )
+			.locator( '#wc_settings_email_image_url_slotfill' )
 			.getByRole( 'button', { name: 'Remove', exact: true } )
 			.click();
-		await expect( page.locator( existingImageElement ) ).toBeHidden();
-		await expect( page.locator( newImageElement ) ).toBeVisible();
+		await expect( page.locator( logoImageElement ) ).toBeHidden();
+		await expect( page.locator( uploadIconElement ) ).toBeVisible();
 	} );
 
 	test(
