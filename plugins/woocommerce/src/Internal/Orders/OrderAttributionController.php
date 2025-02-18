@@ -539,4 +539,21 @@ class OrderAttributionController implements RegisterHooksInterface {
 		add_action( "manage_{$screen_id}_custom_column", $display_column, 10, 2 );
 		add_action( "manage_{$screen_id}_posts_custom_column", $display_column, 10, 2 );
 	}
+
+	/**
+	 * Check if this order already has any attribution data
+	 *
+	 * @param WC_Order $order The order object.
+	 *
+	 * @return bool
+	 * @since 9.8.0
+	 */
+	public function has_attribution( $order ) {
+		foreach ( $this->field_names as $field ) {
+			if ( $order->meta_exists( $this->get_meta_prefixed_field_name( $field ) ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
