@@ -33,7 +33,7 @@ class EmailPreview {
 	 *
 	 * @var array
 	 */
-	private static array $email_style_settings_ids = array(
+	private static array $email_style_setting_ids = array(
 		'woocommerce_email_background_color',
 		'woocommerce_email_base_color',
 		'woocommerce_email_body_background_color',
@@ -51,14 +51,14 @@ class EmailPreview {
 	 *
 	 * @var array
 	 */
-	private static array $email_content_settings_ids = array();
+	private static array $email_content_setting_ids = array();
 
 	/**
-	 * Whether the email settings IDs are initialized.
+	 * Whether the email setting IDs are initialized.
 	 *
 	 * @var bool
 	 */
-	private static bool $email_settings_ids_initialized = false;
+	private static bool $email_setting_ids_initialized = false;
 
 	/**
 	 * The email type to preview.
@@ -94,49 +94,66 @@ class EmailPreview {
 	}
 
 	/**
-	 * Get all email settings IDs.
+	 * Get all email setting IDs.
 	 */
-	public static function get_all_email_settings_ids() {
-		if ( ! self::$email_settings_ids_initialized ) {
-			self::$email_settings_ids_initialized = true;
+	public static function get_all_email_setting_ids() {
+		if ( ! self::$email_setting_ids_initialized ) {
+			self::$email_setting_ids_initialized = true;
 
 			$emails = WC()->mailer()->get_emails();
 			foreach ( $emails as $email ) {
-				self::$email_content_settings_ids = array_merge(
-					self::$email_content_settings_ids,
-					self::get_email_content_settings_ids( $email->id )
+				self::$email_content_setting_ids = array_merge(
+					self::$email_content_setting_ids,
+					self::get_email_content_setting_ids( $email->id )
 				);
 			}
-			self::$email_content_settings_ids = array_unique( self::$email_content_settings_ids );
+			self::$email_content_setting_ids = array_unique( self::$email_content_setting_ids );
 		}
 		return array_merge(
-			self::$email_style_settings_ids,
-			self::$email_content_settings_ids,
+			self::$email_style_setting_ids,
+			self::$email_content_setting_ids,
 		);
 	}
 
 	/**
-	 * Get email style settings IDs.
+	 * Get email style setting IDs.
 	 */
-	public static function get_email_style_settings_ids() {
-		return self::$email_style_settings_ids;
+	public static function get_email_style_setting_ids() {
+		/**
+		 * Filter the email style setting IDs. Email preview automatically refreshes when these settings are changed.
+		 *
+		 * @param array $setting_ids The email style setting IDs.
+		 *
+		 * @since 9.8.0
+		 */
+		return apply_filters( 'woocommerce_email_preview_email_style_setting_ids', self::$email_style_setting_ids );
 	}
 
 	/**
-	 * Get email content settings IDs for specific email.
+	 * Get email content setting IDs for specific email.
 	 *
 	 * @param string|null $email_id Email ID.
 	 */
-	public static function get_email_content_settings_ids( ?string $email_id ) {
+	public static function get_email_content_setting_ids( ?string $email_id ) {
 		if ( ! $email_id ) {
 			return array();
 		}
-		return array(
+		$setting_ids = array(
 			"woocommerce_{$email_id}_subject",
 			"woocommerce_{$email_id}_heading",
 			"woocommerce_{$email_id}_additional_content",
 			"woocommerce_{$email_id}_email_type",
 		);
+
+		/**
+		 * Filter the email content setting IDs for specific email. Email preview automatically refreshes when these settings are changed.
+		 *
+		 * @param array  $setting_ids The email content setting IDs.
+		 * @param string $email_id The email ID.
+		 *
+		 * @since 9.8.0
+		 */
+		return apply_filters( 'woocommerce_email_preview_email_content_setting_ids', $setting_ids, $email_id );
 	}
 
 	/**

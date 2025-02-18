@@ -66,8 +66,8 @@ class WC_Settings_Emails_Test extends WC_Settings_Unit_Test_Case {
 	public function test_get_default_settings_returns_all_settings() {
 		$sut = new WC_Settings_Emails();
 
-		$settings               = $sut->get_settings_for_section( '' );
-		$settings_ids_and_types = $this->get_ids_and_types( $settings );
+		$settings              = $sut->get_settings_for_section( '' );
+		$setting_ids_and_types = $this->get_ids_and_types( $settings );
 
 		$expected = array(
 			'email_notification_settings'              => array( 'title', 'sectionend' ),
@@ -88,7 +88,7 @@ class WC_Settings_Emails_Test extends WC_Settings_Unit_Test_Case {
 			'woocommerce_merchant_email_notifications' => 'checkbox',
 		);
 
-		$this->assertEquals( $expected, $settings_ids_and_types );
+		$this->assertEquals( $expected, $setting_ids_and_types );
 	}
 
 	/**
@@ -102,8 +102,8 @@ class WC_Settings_Emails_Test extends WC_Settings_Unit_Test_Case {
 
 		$sut = new WC_Settings_Emails();
 
-		$settings               = $sut->get_settings_for_section( '' );
-		$settings_ids_and_types = $this->get_ids_and_types( $settings );
+		$settings              = $sut->get_settings_for_section( '' );
+		$setting_ids_and_types = $this->get_ids_and_types( $settings );
 
 		$expected = array(
 			'email_notification_settings'              => array( 'title', 'sectionend' ),
@@ -128,7 +128,7 @@ class WC_Settings_Emails_Test extends WC_Settings_Unit_Test_Case {
 			'woocommerce_merchant_email_notifications' => 'checkbox',
 		);
 
-		$this->assertEquals( $expected, $settings_ids_and_types );
+		$this->assertEquals( $expected, $setting_ids_and_types );
 
 		$features_controller->change_feature_enable( 'email_improvements', $original_value );
 	}

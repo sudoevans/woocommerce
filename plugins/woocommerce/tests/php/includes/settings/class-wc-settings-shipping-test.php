@@ -87,8 +87,8 @@ class WC_Settings_Shipping_Test extends WC_Settings_Unit_Test_Case {
 	public function test_get_options_settings_returns_all_settings() {
 		$sut = new WC_Settings_Shipping();
 
-		$settings               = $sut->get_settings_for_section( 'options' );
-		$settings_ids_and_types = $this->get_ids_and_types( $settings );
+		$settings              = $sut->get_settings_for_section( 'options' );
+		$setting_ids_and_types = $this->get_ids_and_types( $settings );
 
 		$expected = array(
 			'shipping_options'                           => array( 'title', 'sectionend' ),
@@ -98,7 +98,7 @@ class WC_Settings_Shipping_Test extends WC_Settings_Unit_Test_Case {
 			'woocommerce_shipping_debug_mode'            => 'checkbox',
 		);
 
-		$this->assertEquals( $expected, $settings_ids_and_types );
+		$this->assertEquals( $expected, $setting_ids_and_types );
 	}
 
 	/**
