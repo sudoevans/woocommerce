@@ -9,8 +9,6 @@ const test = baseTest.extend( {
 			'options?options=woocommerce_task_list_hidden'
 		);
 
-		console.log( 'Page fixture' );
-
 		// Ensure task list is visible.
 		await wcAdminApi.put( 'options', {
 			woocommerce_task_list_hidden: 'no',
