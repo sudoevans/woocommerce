@@ -1577,11 +1577,11 @@ test.describe( 'Settings API tests: CRUD', () => {
 						id: 'woocommerce_email_base_color',
 						label: 'Base color',
 						description:
-							'The base color for WooCommerce email templates. Default <code>#7f54b3</code>.',
+							'The base color for WooCommerce email templates. Default <code>#720eec</code>.',
 						type: 'color',
-						default: '#7f54b3',
-						tip: 'The base color for WooCommerce email templates. Default <code>#7f54b3</code>.',
-						value: '#7f54b3',
+						default: '#720eec',
+						tip: 'The base color for WooCommerce email templates. Default <code>#720eec</code>.',
+						value: '#720eec',
 					} ),
 				] )
 			);
@@ -1731,7 +1731,7 @@ test.describe( 'Settings API tests: CRUD', () => {
 						type: 'color',
 						default: '#000000',
 						tip: 'Customize the color of your buttons and links. Default <code>#000000</code>.',
-						value: '#7f54b3',
+						value: '#720eec',
 					} ),
 				] )
 			);

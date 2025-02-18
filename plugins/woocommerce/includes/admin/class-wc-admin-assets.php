@@ -12,7 +12,6 @@ use Automattic\WooCommerce\Enums\OrderStatus;
 use Automattic\WooCommerce\Enums\ProductType;
 use Automattic\WooCommerce\Internal\Admin\Analytics;
 use Automattic\WooCommerce\Internal\Admin\WCAdminAssets;
-use Automattic\WooCommerce\Internal\BrandingController;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -116,11 +115,6 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 
 			if ( WC_Marketplace_Suggestions::show_suggestions_for_screen( $screen_id ) ) {
 				wp_enqueue_style( 'woocommerce_admin_marketplace_styles' );
-			}
-
-			// Override primary color if new branding is in use.
-			if ( BrandingController::use_new_branding() ) {
-				wp_enqueue_style( 'woocommerce_admin_variables', WC()->plugin_url() . '/assets/css/variables-new-branding.css', array(), $version );
 			}
 		}
 
