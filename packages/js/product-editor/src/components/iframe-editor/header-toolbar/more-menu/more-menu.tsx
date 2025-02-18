@@ -5,10 +5,7 @@ import { MenuGroup } from '@wordpress/components';
 import { createElement, Fragment } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { isWpVersion } from '@woocommerce/settings';
-import {
-	ActionItem,
-	// @ts-expect-error missing types.
-} from '@wordpress/interface';
+import ActionItem from '@wordpress/interface/build-module/components/action-item';
 
 /**
  * Internal dependencies
