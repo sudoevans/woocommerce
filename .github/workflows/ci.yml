@@ -473,7 +473,7 @@ jobs:
     name: 'Validate changelog'
     if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'trunk' && needs.identify-jobs-to-run.outputs.needs-changelog-validation == 'true' }}
     needs: [ 'identify-jobs-to-run' ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
 
@@ -484,18 +484,23 @@ jobs:
           fetch-depth: '0'
 
       - uses: './.github/actions/setup-woocommerce-monorepo'
-        with:
-          # The package has majority of composer-deps, therefore referencing it
-          pull-package-composer-deps: '@woocommerce/plugin-woocommerce'
 
       - name: 'Validate - missing entries'
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
-        run: php tools/monorepo/check-changelogger-use.php --debug "$BASE" "$HEAD"
+        id: validate_missing
+        run: |
+            passed=$( php tools/monorepo/check-changelogger-use.php --debug "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | tee -a /dev/stderr | grep 'Passed validation' )
+            echo "passed=${passed/Passed validation: /}" >> $GITHUB_OUTPUT
 
       - name: 'Validate - existing entries'
-        run: composer global require automattic/jetpack-changelogger:3.3.0 --quiet && pnpm --recursive --parallel --stream changelog validate
+        run: |
+            echo "Validating: ${{ steps.validate_missing.outputs.passed }}"
+            filter='';
+            for package in $( echo "${{ steps.validate_missing.outputs.passed }}" | tr -d "[:space:]" | tr "," "\n" ); do
+                filter="$filter --filter $package"
+            done
+            echo "Populated filter: $filter"
+
+            pnpm --parallel --workspace-concurrency=10 --stream $filter changelog validate
 
   validate-markdown:
     name: 'Validate markdown'

@@ -241,4 +241,15 @@ if ( $exit && ! getenv( 'CI' ) && ! $list ) {
 	printf( "\e[32mUse `pnpm --filter={project} changelog add` to add a change file for each project.\e[0m\n" );
 }
 
+// On success in CI, export list of passed package for further validation.
+if ( ! $exit && getenv( 'CI' ) ) {
+	$passed_packages = array_map(
+		function ( string $slug ) {
+			return json_decode( file_get_contents( sprintf( './%s/package.json', $slug ) ), true )['name'] ?? ( './' . $slug );
+		},
+		array_keys( $touched_projects )
+	);
+	echo sprintf( "Passed validation: %s", implode( ', ', $passed_packages ) ), PHP_EOL;
+}
+
 exit( $exit );
