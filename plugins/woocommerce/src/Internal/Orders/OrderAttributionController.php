@@ -150,6 +150,12 @@ class OrderAttributionController implements RegisterHooksInterface {
 		add_action(
 			'woocommerce_checkout_order_created',
 			function ( $order ) {
+
+				// Check if this order already has any attribution data to prevent duplicates attribution data.
+				if ( $this->has_attribution( $order ) ) {
+					return;
+				}
+
 				// Nonce check is handled by WooCommerce before woocommerce_checkout_order_created hook.
 				// phpcs:ignore WordPress.Security.NonceVerification
 				$params = $this->get_unprefixed_field_values( $_POST );
