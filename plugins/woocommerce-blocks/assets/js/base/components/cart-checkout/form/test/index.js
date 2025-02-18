@@ -21,16 +21,11 @@ jest.mock( '@wordpress/element', () => {
 	};
 } );
 
-const renderInCheckoutProvider = ( ui, options = { legacyRoot: true } ) => {
+const renderInCheckoutProvider = ( ui ) => {
 	const Wrapper = ( { children } ) => {
 		return <CheckoutProvider>{ children }</CheckoutProvider>;
 	};
-	const result = render( ui, { wrapper: Wrapper, ...options } );
-	// We need to switch to React 17 rendering to allow these tests to keep passing, but as a result the React
-	// rendering error will be shown.
-	expect( console ).toHaveErroredWith(
-		`Warning: ReactDOM.render is no longer supported in React 18. Use createRoot instead. Until you switch to the new API, your app will behave as if it's running React 17. Learn more: https://reactjs.org/link/switch-to-createroot`
-	);
+	const result = render( ui, { wrapper: Wrapper } );
 	return result;
 };
 
