@@ -19,6 +19,10 @@ import {
 	optionsStore,
 } from '@woocommerce/data';
 import { __ } from '@wordpress/i18n';
+import { getAdminLink } from '@woocommerce/settings';
+import { recordEvent } from '@woocommerce/tracks';
+import { Button, Card, CardHeader, CardFooter } from '@wordpress/components';
+import { Text } from '@woocommerce/experimental';
 
 /**
  * Internal dependencies
@@ -37,6 +41,7 @@ import '../dashboard/style.scss';
 import { getAdminSetting } from '~/utils/admin-settings';
 import { WooHomescreenHeaderBanner } from './header-banner-slot';
 import { WooHomescreenWCPayFeature } from './wcpay-feature-slot';
+
 import {
 	isTaskListVisible,
 	useTaskListsState,
@@ -147,7 +152,7 @@ export const Layout = ( {
 	};
 
 	return (
-		<>
+		<div className="woocommerce-homescreen">
 			{ isDashboardShown && (
 				<WooHomescreenHeaderBanner
 					className={ clsx( 'woocommerce-homescreen', {
@@ -163,7 +168,49 @@ export const Layout = ( {
 				{ isDashboardShown ? renderColumns() : renderTaskList() }
 				{ shouldShowMobileAppModal && <MobileAppModal /> }
 			</div>
-		</>
+			<Card
+				className={ clsx( {
+					'woocommerce-home-browse-marketplace': ! twoColumns,
+					'woocommerce-home-browse-marketplace--wide': twoColumns,
+				} ) }
+			>
+				<CardHeader>
+					<Text
+						variant="title.small"
+						as="h2"
+						className="woocommerce-browse-marketplace-card__title"
+					>
+						{ __(
+							'Power up your store with business-critical features',
+							'woocommerce'
+						) }
+					</Text>
+				</CardHeader>
+				<CardFooter>
+					<Text variant="body.small" as="p">
+						{ __(
+							'Visit the Official WooCommerce Marketplace to access hundreds of vetted products and services.',
+							'woocommerce'
+						) }
+					</Text>
+					<Button
+						onClick={ () => {
+							recordEvent(
+								'homescreen_visit_marketplace_click',
+								{}
+							);
+
+							return true;
+						} }
+						href={ getAdminLink(
+							'admin.php?page=wc-admin&path=/extensions'
+						) }
+					>
+						{ __( 'Browse the Marketplace', 'woocommerce' ) }
+					</Button>
+				</CardFooter>
+			</Card>
+		</div>
 	);
 };
 
