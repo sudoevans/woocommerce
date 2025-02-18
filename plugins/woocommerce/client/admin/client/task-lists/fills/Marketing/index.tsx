@@ -25,6 +25,7 @@ import { createNoticesFromResponse } from '~/lib/notices';
 import { PluginList, PluginListProps } from './PluginList';
 import { PluginProps } from './Plugin';
 import { getPluginSlug } from '../../../utils';
+import { TrackedLink } from '~/components/tracked-link/tracked-link';
 
 // We display the list of plugins ordered by this list.
 const ALLOWED_PLUGIN_LISTS = [ 'task-list/grow', 'task-list/reach' ];
@@ -226,6 +227,20 @@ const Marketing: React.FC< MarketingProps > = ( { onComplete } ) => {
 					} ) }
 				</Card>
 			) }
+			<TrackedLink
+				textProps={ {
+					as: 'div',
+					className:
+						'woocommerce-task-dashboard__container woocommerce-task-marketplace-link',
+				} }
+				message={ __(
+					// translators: {{Link}} is a placeholder for a html element.
+					'Visit the {{Link}}Official WooCommerce Marketplace{{/Link}} to enhance your store with additional marketing solutions.',
+					'woocommerce'
+				) }
+				eventName="tasklist_marketing_visit_marketplace_click"
+				targetUrl="admin.php?page=wc-admin&tab=extensions&path=/extensions&category=marketing-extensions"
+			/>
 		</div>
 	);
 };

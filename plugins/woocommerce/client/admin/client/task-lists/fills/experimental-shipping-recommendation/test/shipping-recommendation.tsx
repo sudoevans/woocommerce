@@ -1,9 +1,10 @@
 /**
  * External dependencies
  */
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TaskType } from '@woocommerce/data';
 import userEvent from '@testing-library/user-event';
+import { recordEvent } from '@woocommerce/tracks';
 
 /**
  * Internal dependencies
@@ -63,6 +64,10 @@ jest.mock( '@wordpress/data', () => ( {
 			},
 		} ) )
 	),
+} ) );
+
+jest.mock( '@woocommerce/tracks', () => ( {
+	recordEvent: jest.fn(),
 } ) );
 
 const taskProps: TaskProps = {
@@ -138,5 +143,38 @@ describe( 'ShippingRecommendation', () => {
 
 		await userEvent.click( getByText( 'Set store location' ) );
 		expect( getByText( 'Address' ) ).toBeInTheDocument();
+	} );
+
+	test( 'should trigger event tasklist_shipping_recommendation_visit_marketplace_click when clicking the Official WooCommerce Marketplace link', () => {
+		render( <ShippingRecommendation /> );
+
+		fireEvent.click(
+			screen.getByText( 'Official WooCommerce Marketplace' )
+		);
+
+		expect( recordEvent ).toHaveBeenCalledWith(
+			'tasklist_shipping_recommendation_visit_marketplace_click'
+		);
+	} );
+
+	test( 'should navigate to the marketplace when clicking the Official WooCommerce Marketplace link', async () => {
+		const mockLocation = {
+			href: 'test',
+		} as Location;
+
+		mockLocation.href = 'test';
+		Object.defineProperty( global.window, 'location', {
+			value: mockLocation,
+		} );
+
+		render( <ShippingRecommendation /> );
+
+		fireEvent.click(
+			screen.getByText( 'Official WooCommerce Marketplace' )
+		);
+
+		expect( mockLocation.href ).toContain(
+			'admin.php?page=wc-admin&tab=extensions&path=/extensions&category=shipping'
+		);
 	} );
 } );
