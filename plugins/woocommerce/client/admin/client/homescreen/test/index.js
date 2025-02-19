@@ -160,7 +160,7 @@ describe( 'Homescreen Layout', () => {
 		const homescreen = container.getElementsByClassName(
 			'woocommerce-homescreen'
 		);
-		expect( homescreen ).toHaveLength( 2 );
+		expect( homescreen ).toHaveLength( 1 );
 
 		expect( homescreen[ 0 ] ).not.toHaveClass( 'two-columns' );
 	} );
