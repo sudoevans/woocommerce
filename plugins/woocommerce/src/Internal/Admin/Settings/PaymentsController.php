@@ -6,6 +6,7 @@ namespace Automattic\WooCommerce\Internal\Admin\Settings;
 use Automattic\WooCommerce\Admin\Features\Features;
 use Automattic\WooCommerce\Internal\Admin\Suggestions\PaymentExtensionSuggestions;
 use Exception;
+use WooCommerce\Admin\Experimental_Abtest;
 
 defined( 'ABSPATH' ) || exit;
 /**
@@ -26,10 +27,43 @@ class PaymentsController {
 	 * Register hooks.
 	 */
 	public function register() {
+		// Filter the feature config to allow the experiment to have effect.
+		// Use a priority of 9 to ensure that the filter runs before the user-set feature values
+		// are applied by the WC Beta Tester plugin.
+		// This way we allow users to control the feature flag via the WC Beta Tester plugin and disregard the experiment.
+		// @see plugins/woocommerce-beta-tester/plugin.php.
+		add_filter( 'woocommerce_admin_get_feature_config', array( $this, 'filter_feature_config_experiment' ), 9 );
+
 		// Because we gate the hooking based on a feature flag,
 		// we need to delay the registration until the 'woocommerce_init' hook.
 		// Otherwise, we end up in an infinite loop.
 		add_action( 'woocommerce_init', array( $this, 'delayed_register' ) );
+	}
+
+	/**
+	 * Filter the feature flags list to modify the new Payments Settings page feature based on the experiment.
+	 *
+	 * @param array $features The feature flags list.
+	 *
+	 * @return array The updated feature flags list.
+	 */
+	public function filter_feature_config_experiment( $features ) {
+		// If the feature flag is not present or has been disabled, don't do anything.
+		if ( empty( $features['reactify-classic-payments-settings'] ) ) {
+			return $features;
+		}
+
+		// If the feature flag is enabled, but the user is NOT in the experiment treatment group, disable the feature.
+		if ( ! Experimental_Abtest::in_treatment_handled_exception( 'woocommerce_payment_settings_2025_v1' ) ) {
+			return array_merge(
+				$features,
+				array(
+					'reactify-classic-payments-settings' => false,
+				)
+			);
+		}
+
+		return $features;
 	}
 
 	/**

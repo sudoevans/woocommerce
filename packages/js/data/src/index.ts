@@ -44,6 +44,7 @@ export {
 	EnableGatewayResponse,
 	PaymentGatewayLink,
 	RecommendedPaymentMethod,
+	PluginData,
 } from './payment-settings/types';
 export { ShippingMethod } from './shipping-methods/types';
 

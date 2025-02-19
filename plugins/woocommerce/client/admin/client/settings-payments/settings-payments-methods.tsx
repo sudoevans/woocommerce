@@ -85,9 +85,10 @@ const combineRequestMethods = (
  * Combines Apple Pay and Google Pay into a single method if both exist and allows users
  * to toggle the enabled/disabled state of each payment method.
  */
-export const SettingsPaymentsMethods: React.FC<
-	SettingsPaymentsMethodsProps
-> = ( { paymentMethodsState, setPaymentMethodsState } ) => {
+export const SettingsPaymentsMethods = ( {
+	paymentMethodsState,
+	setPaymentMethodsState,
+}: SettingsPaymentsMethodsProps ) => {
 	const [ isExpanded, setIsExpanded ] = useState( false );
 
 	const { paymentMethods, isFetching } = useSelect( ( select ) => {
