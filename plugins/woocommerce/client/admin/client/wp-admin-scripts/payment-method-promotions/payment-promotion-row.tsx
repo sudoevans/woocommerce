@@ -4,7 +4,7 @@
 import { Button } from '@wordpress/components';
 import { EllipsisMenu, Link } from '@woocommerce/components';
 import { useState, useEffect } from '@wordpress/element';
-import { pluginsStore, PAYMENT_GATEWAYS_STORE_NAME } from '@woocommerce/data';
+import { pluginsStore, paymentGatewaysStore } from '@woocommerce/data';
 import { recordEvent } from '@woocommerce/tracks';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { sanitize } from 'dompurify';
@@ -52,15 +52,14 @@ export const PaymentPromotionRow: React.FC< PaymentPromotionRowProps > = ( {
 	const [ isVisible, setIsVisible ] = useState( true );
 	const { installAndActivatePlugins } = useDispatch( pluginsStore );
 	const { createNotice } = useDispatch( 'core/notices' );
-	const { updatePaymentGateway } = useDispatch( PAYMENT_GATEWAYS_STORE_NAME );
+	const { updatePaymentGateway } = useDispatch( paymentGatewaysStore );
 	const { gatewayIsActive, paymentGateway } = useSelect( ( select ) => {
-		const { getPaymentGateway } = select( PAYMENT_GATEWAYS_STORE_NAME );
+		const { getPaymentGateway } = select( paymentGatewaysStore );
 		const activePlugins: string[] =
 			select( pluginsStore ).getActivePlugins();
 		const isActive = activePlugins && activePlugins.includes( pluginSlug );
 		let paymentGatewayData;
 		if ( isActive ) {
-			// @ts-expect-error Todo: awaiting more global fix, demo: https://github.com/woocommerce/woocommerce/pull/54146
 			paymentGatewayData = getPaymentGateway(
 				pluginSlug.replace( /\-/g, '_' )
 			);

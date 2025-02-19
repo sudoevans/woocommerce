@@ -167,7 +167,7 @@ export function IframeEditor( {
 		useDispatch( blockEditorStore );
 
 	const parentEditorSettings = useSelect( ( select ) => {
-		// @ts-expect-error Todo: awaiting more global fix, demo: https://github.com/woocommerce/woocommerce/pull/54146
+		// @ts-expect-error Selector is not typed
 		return select( blockEditorStore ).getSettings();
 	}, [] );
 
