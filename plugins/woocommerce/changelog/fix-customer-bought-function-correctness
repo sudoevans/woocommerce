@@ -1,4 +1,0 @@
-Significance: patch
-Type: fix
-
-Fixes a correctness over performance issue with wc_customer_bought_product (regression)
