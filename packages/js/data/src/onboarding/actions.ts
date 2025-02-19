@@ -25,6 +25,7 @@ import {
 	CoreProfilerCompletedSteps,
 } from './types';
 import { Plugin, PluginNames } from '../plugins/types';
+import { optionsStore } from '..';
 
 export function getFreeExtensionsError( error: unknown ) {
 	return {
@@ -338,10 +339,9 @@ export function* updateProfileItems( items: ProfileItems ) {
 		yield setIsRequesting( 'updateProfileItems', false );
 		throw error;
 	} finally {
-		yield dispatch( OPTIONS_STORE_NAME ).invalidateResolution(
-			'getOption',
-			[ 'woocommerce_onboarding_profile' ]
-		);
+		yield dispatch( optionsStore ).invalidateResolution( 'getOption', [
+			'woocommerce_onboarding_profile',
+		] );
 		yield dispatch( store ).invalidateResolution( 'getProfileItems', [] );
 	}
 }
