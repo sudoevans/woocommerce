@@ -354,6 +354,11 @@
 				}
 			}
 		}
+
+		&__installed-label {
+			font-weight: 500;
+			color: $valid-green;
+		}
 	}
 }
 
