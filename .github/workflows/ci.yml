@@ -361,8 +361,6 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.report }}-attempt-${{ github.run_attempt }}
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: 'Merge artifacts'
         id: merge-artifacts
         uses: actions/upload-artifact/merge@v4
