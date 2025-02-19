@@ -12,7 +12,7 @@ import { dispatch } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { API_NAMESPACE } from './';
+import { API_NAMESPACE } from './constants';
 // @ts-ignore no types
 import { STORE_KEY as optionsStore } from '../options/data/constants';
 

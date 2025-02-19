@@ -94,7 +94,9 @@ function add_extension_register_script() {
 		);
 	$script_url        = plugins_url( $script_path, __FILE__ );
 
-	$script_asset['dependencies'][] = WC_ADMIN_APP; // Add WCA as a dependency to ensure it loads first.
+	if ( class_exists( '\Automattic\WooCommerce\Admin\PageController' ) && \Automattic\WooCommerce\Admin\PageController::is_admin_page() ) {
+		$script_asset['dependencies'][] = WC_ADMIN_APP; // Add WCA as a dependency to ensure it loads first.
+	}
 
 	wp_register_script(
 		'woocommerce-admin-test-helper',
@@ -105,26 +107,20 @@ function add_extension_register_script() {
 	);
 	wp_enqueue_script( 'woocommerce-admin-test-helper' );
 
-	$css_file_version = filemtime( dirname( __FILE__ ) . '/build/index.css' );
+	$css_file = dirname( __FILE__ ) . '/build/index.css';
+	if ( file_exists( $css_file ) ) {
+		$css_file_version = filemtime( $css_file );
 
-	wp_register_style(
-		'wp-components',
-		plugins_url( 'dist/components/style.css', __FILE__ ),
-		array(),
-		$css_file_version
-	);
+		wp_register_style(
+			'woocommerce-admin-test-helper',
+			plugins_url( '/build/index.css', __FILE__ ),
+			// Add any dependencies styles may have, such as wp-components.
+			array(),
+			$css_file_version
+		);
 
-	wp_register_style(
-		'woocommerce-admin-test-helper',
-		plugins_url( '/build/index.css', __FILE__ ),
-		// Add any dependencies styles may have, such as wp-components.
-		array(
-			'wp-components',
-		),
-		$css_file_version
-	);
-
-	wp_enqueue_style( 'woocommerce-admin-test-helper' );
+		wp_enqueue_style( 'woocommerce-admin-test-helper' );
+	}
 }
 
 add_action( 'admin_enqueue_scripts', 'add_extension_register_script' );
@@ -185,3 +181,4 @@ if ( $simulate_error ) {
 
 // Initialize the live branches feature.
 require_once dirname( __FILE__ ) . '/includes/class-wc-beta-tester-live-branches.php';
+require_once dirname( __FILE__ ) . '/includes/class-wc-beta-tester-product-editor-devtools.php';
