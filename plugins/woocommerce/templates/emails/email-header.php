@@ -12,7 +12,7 @@
  *
  * @see     https://woocommerce.com/document/template-structure/
  * @package WooCommerce\Templates\Emails
- * @version 9.7.0
+ * @version 9.8.0
  */
 
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
@@ -83,5 +83,5 @@ $email_improvements_enabled = FeaturesUtil::feature_is_enabled( 'email_improveme
 															<!-- Content -->
 															<table border="0" cellpadding="20" cellspacing="0" width="100%">
 																<tr>
-																	<td valign="top">
+																	<td valign="top" id="body_content_inner_cell">
 																		<div id="body_content_inner">

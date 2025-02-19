@@ -75,6 +75,11 @@ if ( wc_hex_is_light( $body ) ) {
 	$link_color = wc_hex_is_light( $base ) ? $base_text : $base;
 }
 
+// If email improvements are enabled, always use the base color for links.
+if ( $email_improvements_enabled ) {
+	$link_color = $base;
+}
+
 $bg_darker_10    = wc_hex_darker( $bg, 10 );
 $body_darker_10  = wc_hex_darker( $body, 10 );
 $base_lighter_20 = wc_hex_lighter( $base, 20 );
@@ -104,7 +109,7 @@ body {
 
 #wrapper {
 	margin: 0 auto;
-	padding: 70px 0;
+	padding: <?php echo $email_improvements_enabled ? '24px 0' : '70px 0'; ?>;
 	-webkit-text-size-adjust: none !important;
 	width: 100%;
 	max-width: 600px;
@@ -231,10 +236,7 @@ body {
 	padding: 12px;
 }
 
-#body_content table .email-order-details td {
-	padding: 8px 12px;
-}
-
+#body_content table .email-order-details td,
 #body_content table .email-order-details th {
 	padding: 8px 12px;
 }
@@ -470,17 +472,56 @@ h2.email-order-detail-heading span {
  * Gmail clients and can help us achieve better consistency there.
  */
 @media screen and (max-width: 600px) {
-	#header_wrapper {
-		padding: 27px 36px !important;
-		font-size: 24px;
-	}
+	<?php if ( $email_improvements_enabled ) : ?>
+		#template_header_image {
+			padding: 16px 10px 0 !important;
+		}
 
-	#body_content table > tbody > tr > td {
-		padding: 10px !important;
-	}
+		#header_wrapper {
+			padding: 16px 10px 0 !important;
+		}
 
-	#body_content_inner {
-		font-size: 10px !important;
-	}
+		#header_wrapper h1 {
+			font-size: 24px !important;
+		}
+
+		#body_content_inner_cell {
+			padding: 10px !important;
+		}
+
+		#body_content_inner {
+			font-size: 12px !important;
+		}
+
+		#body_content td ul.wc-item-meta {
+			font-size: 12px !important;
+		}
+
+		#body_content .email-order-details .order-totals-total td {
+			font-size: 14px !important;
+		}
+
+		.email-order-detail-heading {
+			font-size: 16px !important;
+			line-height: 130% !important;
+		}
+
+		.email-additional-content {
+			padding-top: 0 !important;
+		}
+	<?php else : ?>
+		#header_wrapper {
+			padding: 27px 36px !important;
+			font-size: 24px;
+		}
+
+		#body_content table > tbody > tr > td {
+			padding: 10px !important;
+		}
+
+		#body_content_inner {
+			font-size: 10px !important;
+		}
+	<?php endif; ?>
 }
 <?php

@@ -365,7 +365,7 @@ class EmailPreview {
 	 */
 	private function get_dummy_product() {
 		$product = new WC_Product();
-		$product->set_name( 'Dummy Product' );
+		$product->set_name( __( 'Dummy Product', 'woocommerce' ) );
 		$product->set_price( 25 );
 
 		/**
@@ -386,12 +386,12 @@ class EmailPreview {
 	 */
 	private function get_dummy_product_variation() {
 		$variation = new WC_Product_Variation();
-		$variation->set_name( 'Dummy Product Variation' );
+		$variation->set_name( __( 'Dummy Product Variation', 'woocommerce' ) );
 		$variation->set_price( 20 );
 		$variation->set_attributes(
 			array(
-				'pa_color' => 'red',
-				'pa_size'  => 'small',
+				__( 'Color', 'woocommerce' ) => __( 'Red', 'woocommerce' ),
+				__( 'Size', 'woocommerce' )  => __( 'Small', 'woocommerce' ),
 			)
 		);
 

@@ -233,11 +233,11 @@ $wc-setting-email-width: 634px;
 .wc-settings-email-preview-header-sender {
 	font-size: 13px;
 	font-weight: 600;
+	word-break: break-word;
 
 	span {
 		font-size: 11px;
 		font-weight: 400;
-		margin-left: 4px;
 	}
 }
 
