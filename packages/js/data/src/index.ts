@@ -65,6 +65,7 @@ export { store as ordersStore } from './orders';
 export { store as pluginsStore } from './plugins';
 export { store as optionsStore } from './options';
 export { store as userStore } from './user';
+export { store as productsStore } from './products';
 
 // Export hooks
 export { withSettingsHydration } from './settings/with-settings-hydration';

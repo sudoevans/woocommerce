@@ -9,7 +9,7 @@ import {
 	Product,
 	ProductsStoreActions,
 	ProductStatus,
-	PRODUCTS_STORE_NAME,
+	productsStore,
 	ReadOnlyProperties,
 	productReadOnlyProperties,
 	experimentalProductVariationsStore,
@@ -55,7 +55,7 @@ function getNoticePreviewActions( status: ProductStatus, permalink: string ) {
 
 export function useProductHelper() {
 	const { createProduct, updateProduct, deleteProduct } = useDispatch(
-		PRODUCTS_STORE_NAME
+		productsStore
 	) as ProductsStoreActions;
 	const {
 		batchUpdateProductVariations,
