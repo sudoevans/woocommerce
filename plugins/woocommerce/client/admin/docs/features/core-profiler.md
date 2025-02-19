@@ -57,31 +57,31 @@ This stores the location that the WooCommerce store believes it is in. This is u
 
 This determines whether we return telemetry to Automattic.
 
-### Currency options
+### Currency and Measurement Unit Options
 
-These options are set by looking up the currency data from `@woocommerce/currency` after the user has selected their country.
+These options are set by calling the `updateStoreCurrencyAndMeasurementUnits` function after the user has selected their country. This function updates both currency and measurement unit settings in PHP.
+
+#### Currency Options
+
+The following currency options are updated:
 
 - `woocommerce_currency`
-
 - `woocommerce_currency_pos`
-
 - `woocommerce_price_thousand_sep`
-
 - `woocommerce_price_decimal_sep`
-
 - `woocommerce_price_num_decimals`
 
-Refer to [Shop currency documentation](https://woocommerce.com/document/shop-currency/) and [class-wc-settings-general.php](https://woocommerce.github.io/code-reference/files/woocommerce-includes-admin-settings-class-wc-settings-general.html) for the full details of the currency settings.
+Refer to [Shop currency documentation](https://woocommerce.com/document/shop-currency/) and [`class-wc-settings-general.php`](https://woocommerce.github.io/code-reference/files/woocommerce-includes-admin-settings-class-wc-settings-general.html) for full details on currency settings.
 
-### Weight and Dimension options
+#### Weight and Dimension Options
 
-These options are set by looking up the weight and dimension data from admin localeInfo settings after the user has selected their country.
+The following weight and dimension options are updated:
 
 - `woocommerce_weight_unit`
-
 - `woocommerce_dimension_unit`
 
-Refer to [class-wc-settings-products.php](https://woocommerce.github.io/code-reference/files/woocommerce-includes-admin-settings-class-wc-settings-products.html) and [locale-info.php](https://github.com/woocommerce/woocommerce/blob/trunk/plugins/woocommerce/i18n/locale-info.php) for the full details of the weight and dimension settings.
+Refer to [`class-wc-settings-products.php`](https://woocommerce.github.io/code-reference/files/woocommerce-includes-admin-settings-class-wc-settings-products.html) and [`locale-info.php`](https://github.com/woocommerce/woocommerce/blob/trunk/plugins/woocommerce/i18n/locale-info.php) for full details on weight and dimension settings.
+
 
 ### Coming soon options
 
@@ -123,6 +123,10 @@ This is used to retrieve the URL that the browser should be redirected to in ord
 - `resolveSelect( onboardingStore ).coreProfilerCompleted()`
 
 This is used to indicate to WooCommerce Admin that the Core Profiler has been completed, and this sets the Store's coming-soon mode to true. This hides the store pages from the public until the store is ready.
+
+- `dispatch( onboardingStore ).updateStoreCurrencyAndMeasurementUnits( countryCode );
+
+This is used to update the store's currency and measurement units, which can be found under WooCommerce → Settings → General → Currency Options and WooCommerce → Settings → Products → Measurements.
 
 ### Extensions Installation
 

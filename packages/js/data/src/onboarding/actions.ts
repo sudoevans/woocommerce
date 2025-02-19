@@ -548,6 +548,28 @@ export function* installAndActivatePluginsAsync(
 	}
 }
 
+export function* updateStoreCurrencyAndMeasurementUnits( countryCode: string ) {
+	yield setIsRequesting( 'updateStoreCurrencyAndMeasurementUnits', true );
+
+	try {
+		const results = yield apiFetch( {
+			path: 'wc-admin/onboarding/profile/update-store-currency-and-measurement-units',
+			method: 'POST',
+			data: {
+				country_code: countryCode,
+			},
+		} );
+		return results;
+	} catch ( error ) {
+		throw error;
+	} finally {
+		yield setIsRequesting(
+			'updateStoreCurrencyAndMeasurementUnits',
+			false
+		);
+	}
+}
+
 export function setJetpackAuthUrl(
 	results: GetJetpackAuthUrlResponse,
 	redirectUrl: string,

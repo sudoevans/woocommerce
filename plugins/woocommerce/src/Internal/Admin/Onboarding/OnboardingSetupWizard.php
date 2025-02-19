@@ -228,15 +228,7 @@ class OnboardingSetupWizard {
 		$profile['wccom_connected'] = empty( $wccom_auth['access_token'] ) ? false : true;
 
 		$settings['onboarding']['currencySymbols'] = get_woocommerce_currency_symbols();
-		$settings['onboarding']['euCountries']     = WC()->countries->get_european_union_countries();
-		$settings['onboarding']['localeInfo']      = include WC()->plugin_path() . '/i18n/locale-info.php';
 		$settings['onboarding']['profile']         = $profile;
-
-		if ( $this->is_setup_wizard() ) {
-			$settings['onboarding']['pageCount']    = (int) ( wp_count_posts( 'page' ) )->publish;
-			$settings['onboarding']['postCount']    = (int) ( wp_count_posts( 'post' ) )->publish;
-			$settings['onboarding']['isBlockTheme'] = wc_current_theme_is_fse_theme();
-		}
 
 		return apply_filters( 'woocommerce_admin_onboarding_preloaded_data', $settings );
 	}

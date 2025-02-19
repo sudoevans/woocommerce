@@ -30,7 +30,6 @@ import {
 	Extension,
 	GeolocationResponse,
 	pluginsStore,
-	settingsStore,
 	userStore,
 	WCUser,
 	ProfileItems,
@@ -40,7 +39,6 @@ import {
 import { initializeExPlat } from '@woocommerce/explat';
 import { CountryStateOption } from '@woocommerce/onboarding';
 import { getAdminLink } from '@woocommerce/settings';
-import CurrencyFactory, { CountryInfo } from '@woocommerce/currency';
 import { recordEvent } from '@woocommerce/tracks';
 
 /**
@@ -76,7 +74,6 @@ import { ProfileSpinner } from './components/profile-spinner/profile-spinner';
 import recordTracksActions from './actions/tracks';
 import { ComponentMeta } from './types';
 import { getCountryCode } from '~/dashboard/utils';
-import { getAdminSetting } from '~/utils/admin-settings';
 import { useXStateInspect } from '~/xstate';
 import { useComponentFromXStateService } from '~/utils/xstate/useComponentFromService';
 import {
@@ -435,87 +432,6 @@ const updateBusinessLocation = ( countryAndState: string ) => {
 	} );
 };
 
-const updateStoreCurrency = async ( countryAndState: string ) => {
-	const { general: settings = {} } = await resolveSelect(
-		settingsStore
-	).getSettings( 'general' );
-
-	const countryCode = getCountryCode( countryAndState ) as string;
-	const { currencySymbols = {}, localeInfo = {} } = getAdminSetting(
-		'onboarding',
-		{}
-	);
-	const currencySettings = CurrencyFactory().getDataForCountry(
-		countryCode,
-		localeInfo,
-		currencySymbols
-	) as {
-		code: string;
-		symbolPosition: string;
-		thousandSeparator: string;
-		decimalSeparator: string;
-		precision: string;
-	};
-
-	if ( Object.keys( currencySettings ).length === 0 ) {
-		return;
-	}
-
-	return dispatch( settingsStore ).updateAndPersistSettingsForGroup(
-		'general',
-		{
-			general: {
-				...settings,
-				woocommerce_currency: currencySettings.code,
-				woocommerce_currency_pos: currencySettings.symbolPosition,
-				woocommerce_price_thousand_sep:
-					currencySettings.thousandSeparator,
-				woocommerce_price_decimal_sep:
-					currencySettings.decimalSeparator,
-				woocommerce_price_num_decimals: currencySettings.precision,
-			},
-		}
-	);
-};
-
-const updateStoreMeasurements = async ( countryAndState: string ) => {
-	if ( ! countryAndState?.trim() ) {
-		throw new Error( 'Country and state are required' );
-	}
-
-	const countryCode = getCountryCode( countryAndState );
-
-	if ( ! countryCode?.trim() ) {
-		throw new Error(
-			`Unable to extract country code from "${ countryAndState }"`
-		);
-	}
-	const { localeInfo = {} } = getAdminSetting( 'onboarding', {} ) as {
-		localeInfo: Record< string, CountryInfo >;
-	};
-
-	const countryInfo = localeInfo[ countryCode ];
-
-	if ( ! countryInfo?.weight_unit || ! countryInfo?.dimension_unit ) {
-		throw new Error(
-			`Missing required measurement units for country: ${ countryCode }. ` +
-				`Found: ${ JSON.stringify( countryInfo ) }`
-		);
-	}
-
-	const { weight_unit, dimension_unit } = countryInfo;
-
-	return dispatch( settingsStore ).updateAndPersistSettingsForGroup(
-		'products',
-		{
-			products: {
-				woocommerce_weight_unit: weight_unit,
-				woocommerce_dimension_unit: dimension_unit,
-			},
-		}
-	);
-};
-
 const assignStoreLocation = assign( {
 	businessInfo: ( {
 		event,
@@ -550,10 +466,13 @@ const updateBusinessInfo = fromPromise(
 			context: CoreProfilerStateMachineContext;
 		};
 	} ) => {
+		const { updateProfileItems, updateStoreCurrencyAndMeasurementUnits } =
+			dispatch( onboardingStore );
 		return Promise.all( [
-			updateStoreCurrency( input.payload.storeLocation ),
-			updateStoreMeasurements( input.payload.storeLocation ),
-			dispatch( onboardingStore ).updateProfileItems( {
+			updateStoreCurrencyAndMeasurementUnits(
+				getCountryCode( input.payload.storeLocation ) as string
+			),
+			updateProfileItems( {
 				is_store_country_set: true,
 				is_agree_marketing: input.payload.isOptInMarketing,
 				...( input.payload.industry && {
@@ -703,25 +622,19 @@ const skipFlowUpdateBusinessLocation = fromPromise(
 	}: {
 		input: CoreProfilerStateMachineContext;
 	} ) => {
-		const skipped = dispatch( onboardingStore ).updateProfileItems( {
+		const { updateProfileItems, updateStoreCurrencyAndMeasurementUnits } =
+			dispatch( onboardingStore );
+		const skipped = updateProfileItems( {
 			skipped: true,
 		} );
 		const businessLocation = updateBusinessLocation(
 			context.businessInfo.location as string
 		);
-		const currencyUpdate = updateStoreCurrency(
-			context.businessInfo.location as string
-		);
-		const measurementsUpdate = updateStoreMeasurements(
-			context.businessInfo.location as string
+		const currencyUpdate = updateStoreCurrencyAndMeasurementUnits(
+			getCountryCode( context.businessInfo.location ) as string
 		);
 
-		return Promise.all( [
-			skipped,
-			businessLocation,
-			currencyUpdate,
-			measurementsUpdate,
-		] );
+		return Promise.all( [ skipped, businessLocation, currencyUpdate ] );
 	}
 );
 
