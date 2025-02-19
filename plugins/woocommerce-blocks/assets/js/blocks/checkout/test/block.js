@@ -4,7 +4,7 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { previewCart } from '@woocommerce/resource-previews';
 import { dispatch } from '@wordpress/data';
-import { CART_STORE_KEY, CHECKOUT_STORE_KEY } from '@woocommerce/block-data';
+import { CART_STORE_KEY, checkoutStore } from '@woocommerce/block-data';
 import { default as fetchMock } from 'jest-fetch-mock';
 import { allSettings } from '@woocommerce/settings';
 
@@ -36,6 +36,14 @@ import Shipping from '../inner-blocks/checkout-order-summary-shipping/frontend';
 import Taxes from '../inner-blocks/checkout-order-summary-taxes/frontend';
 import { defaultCartState } from '../../../data/cart/default-state';
 import Checkout from '../block';
+
+jest.mock( '@wordpress/data', () => {
+	const wpData = jest.requireActual( 'wordpress-data-wp-6-7' );
+	return {
+		__esModule: true,
+		...wpData,
+	};
+} );
 
 jest.mock( '@wordpress/compose', () => ( {
 	...jest.requireActual( '@wordpress/compose' ),
@@ -98,7 +106,11 @@ const CheckoutBlock = () => {
 				<Payment />
 				<AdditionalInformation />
 				<OrderNote />
-				<Terms checkbox={ true } text={ termsCheckboxDefaultText } />
+				<Terms
+					checkbox={ true }
+					showSeparator={ false }
+					text={ termsCheckboxDefaultText }
+				/>
 				<Actions />
 			</Fields>
 			<Totals>
@@ -148,7 +160,7 @@ describe( 'Testing Checkout', () => {
 		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
 	} );
 
-	it( 'Renders the address card if the address is filled', async () => {
+	it( 'Renders the shipping address card if the address is filled and the cart contains a shippable product', async () => {
 		act( () => {
 			const cartWithAddress = {
 				...previewCart,
@@ -190,7 +202,7 @@ describe( 'Testing Checkout', () => {
 		await waitFor( () => expect( fetchMock ).toHaveBeenCalled() );
 
 		expect(
-			screen.getByRole( 'button', { name: 'Edit address' } )
+			screen.getByRole( 'button', { name: 'Edit shipping address' } )
 		).toBeInTheDocument();
 
 		expect(
@@ -258,12 +270,36 @@ describe( 'Testing Checkout', () => {
 		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
 	} );
 
+	it( 'Renders the billing address card if the address is filled and the cart contains a virtual product', async () => {
+		act( () => {
+			const cartWithVirtualProduct = {
+				...previewCart,
+				needs_shipping: false,
+			};
+			fetchMock.mockResponse( ( req ) => {
+				if ( req.url.match( /wc\/store\/v1\/cart/ ) ) {
+					return Promise.resolve(
+						JSON.stringify( cartWithVirtualProduct )
+					);
+				}
+				return Promise.resolve( '' );
+			} );
+		} );
+		render( <CheckoutBlock /> );
+
+		await waitFor( () => expect( fetchMock ).toHaveBeenCalled() );
+
+		expect(
+			screen.getByRole( 'button', { name: 'Edit billing address' } )
+		).toBeInTheDocument();
+	} );
+
 	it( 'Ensures checkbox labels have unique IDs', async () => {
 		await act( async () => {
 			// Set required settings
 			allSettings.checkoutAllowsGuest = true;
 			allSettings.checkoutAllowsSignup = true;
-			dispatch( CHECKOUT_STORE_KEY ).__internalSetCustomerId( 0 );
+			dispatch( checkoutStore ).__internalSetCustomerId( 0 );
 		} );
 
 		// Render the CheckoutBlock
@@ -286,7 +322,7 @@ describe( 'Testing Checkout', () => {
 			// Restore initial settings
 			allSettings.checkoutAllowsGuest = undefined;
 			allSettings.checkoutAllowsSignup = undefined;
-			dispatch( CHECKOUT_STORE_KEY ).__internalSetCustomerId( 1 );
+			dispatch( checkoutStore ).__internalSetCustomerId( 1 );
 		} );
 	} );
 
@@ -326,5 +362,43 @@ describe( 'Testing Checkout', () => {
 		);
 
 		expect( formStepsWithNumber.length ).not.toBe( 0 );
+	} );
+
+	it( 'Shows guest checkout text', async () => {
+		await act( async () => {
+			allSettings.checkoutAllowsGuest = true;
+			allSettings.checkoutAllowsSignup = true;
+			dispatch( checkoutStore ).__internalSetCustomerId( 0 );
+		} );
+
+		// Render the CheckoutBlock
+		const { rerender, queryByText } = render( <CheckoutBlock /> );
+
+		// Wait for the component to fully load, assuming fetch calls or state updates
+		await waitFor( () => expect( fetchMock ).toHaveBeenCalled() );
+
+		// Query the text.
+		expect(
+			queryByText( /You are currently checking out as a guest./i )
+		).toBeInTheDocument();
+
+		await act( async () => {
+			allSettings.checkoutAllowsGuest = true;
+			allSettings.checkoutAllowsSignup = true;
+			dispatch( checkoutStore ).__internalSetCustomerId( 1 );
+		} );
+
+		rerender( <CheckoutBlock /> );
+
+		expect(
+			queryByText( /You are currently checking out as a guest./i )
+		).not.toBeInTheDocument();
+
+		await act( async () => {
+			// Restore initial settings
+			allSettings.checkoutAllowsGuest = undefined;
+			allSettings.checkoutAllowsSignup = undefined;
+			dispatch( checkoutStore ).__internalSetCustomerId( 1 );
+		} );
 	} );
 } );

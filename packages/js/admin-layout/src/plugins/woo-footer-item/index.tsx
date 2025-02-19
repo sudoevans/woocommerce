@@ -29,22 +29,27 @@ export const WC_FOOTER_SLOT_NAME = 'woocommerce_footer_item';
  * @param {Array}  param0.children - Node children.
  * @param {Array}  param0.order    - Node order.
  */
-export const WooFooterItem: React.FC< {
+export const WooFooterItem = ( {
+	children,
+	order = 1,
+}: {
 	children?: React.ReactNode;
 	order?: number;
-} > & {
-	Slot: React.FC< Slot.Props >;
-} = ( { children, order = 1 } ) => {
+} ) => {
 	return (
 		<Fill name={ WC_FOOTER_SLOT_NAME }>
-			{ ( fillProps: Fill.Props ) => {
+			{ ( fillProps ) => {
 				return createOrderedChildren( children, order, fillProps );
 			} }
 		</Fill>
 	);
 };
 
-WooFooterItem.Slot = ( { fillProps } ) => (
+WooFooterItem.Slot = ( {
+	fillProps,
+}: {
+	fillProps?: React.ComponentProps< typeof Slot >[ 'fillProps' ];
+} ) => (
 	<Slot name={ WC_FOOTER_SLOT_NAME } fillProps={ fillProps }>
 		{ sortFillsByOrder }
 	</Slot>

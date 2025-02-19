@@ -104,7 +104,9 @@ export const createResolvers = ( {
 		}
 	};
 
-	const getItemsTotalCount = function* ( query?: Partial< ItemQuery > ) {
+	const getItemsTotalCount = function* (
+		query?: Partial< ItemQuery >
+	): number {
 		const startedTotalCountUsingGetItems: boolean = yield controls.select(
 			storeName,
 			'hasStartedResolution',

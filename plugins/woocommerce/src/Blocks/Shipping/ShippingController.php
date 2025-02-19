@@ -4,8 +4,11 @@ namespace Automattic\WooCommerce\Blocks\Shipping;
 use Automattic\WooCommerce\Blocks\Assets\Api as AssetApi;
 use Automattic\WooCommerce\Blocks\Assets\AssetDataRegistry;
 use Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils;
+use Automattic\WooCommerce\Enums\ProductTaxStatus;
 use Automattic\WooCommerce\StoreApi\Utilities\LocalPickupUtils;
 use Automattic\WooCommerce\Utilities\ArrayUtil;
+use WC_Customer;
+use WC_Shipping_Rate;
 use WC_Tracks;
 
 /**
@@ -60,8 +63,6 @@ class ShippingController {
 				}
 			);
 		}
-
-		$this->asset_data_registry->add( 'collectableMethodIds', array( 'Automattic\WooCommerce\StoreApi\Utilities\LocalPickupUtils', 'get_local_pickup_method_ids' ) );
 		$this->asset_data_registry->add( 'shippingCostRequiresAddress', get_option( 'woocommerce_shipping_cost_requires_address', false ) === 'yes' );
 		add_action( 'rest_api_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_scripts' ) );
@@ -70,31 +71,14 @@ class ShippingController {
 		add_filter( 'woocommerce_local_pickup_methods', array( $this, 'register_local_pickup_method' ) );
 		add_filter( 'woocommerce_order_hide_shipping_address', array( $this, 'hide_shipping_address_for_local_pickup' ), 10 );
 		add_filter( 'woocommerce_customer_taxable_address', array( $this, 'filter_taxable_address' ) );
+		add_filter( 'woocommerce_shipping_settings', array( $this, 'remove_shipping_settings' ) );
 		add_filter( 'woocommerce_shipping_packages', array( $this, 'filter_shipping_packages' ) );
 		add_filter( 'pre_update_option_woocommerce_pickup_location_settings', array( $this, 'flush_cache' ) );
 		add_filter( 'pre_update_option_pickup_location_pickup_locations', array( $this, 'flush_cache' ) );
-		add_filter( 'woocommerce_shipping_settings', array( $this, 'remove_shipping_settings' ) );
+		add_filter( 'woocommerce_shipping_packages', array( $this, 'remove_shipping_if_no_address' ), 11 );
 		add_filter( 'woocommerce_order_shipping_to_display', array( $this, 'show_local_pickup_details' ), 10, 2 );
 
-		// This is required to short circuit `show_shipping` from class-wc-cart.php - without it, that function
-		// returns based on the option's value in the DB and we can't override it any other way.
-		add_filter( 'option_woocommerce_shipping_cost_requires_address', array( $this, 'override_cost_requires_address_option' ) );
-
 		add_action( 'rest_pre_serve_request', array( $this, 'track_local_pickup' ), 10, 4 );
-	}
-
-	/**
-	 * Overrides the option to force shipping calculations NOT to wait until an address is entered, but only if the
-	 * Checkout page contains the Checkout Block.
-	 *
-	 * @param boolean $value Whether shipping cost calculation requires address to be entered.
-	 * @return boolean Whether shipping cost calculation should require an address to be entered before calculating.
-	 */
-	public function override_cost_requires_address_option( $value ) {
-		if ( CartCheckoutUtils::is_checkout_block_default() && $this->local_pickup_enabled ) {
-			return 'no';
-		}
-		return $value;
 	}
 
 	/**
@@ -144,13 +128,8 @@ class ShippingController {
 		if ( CartCheckoutUtils::is_checkout_block_default() && $this->local_pickup_enabled ) {
 			foreach ( $settings as $index => $setting ) {
 				if ( 'woocommerce_shipping_cost_requires_address' === $setting['id'] ) {
-					$settings[ $index ]['desc'] = sprintf(
-						/* translators: %s: URL to the documentation. */
-						__( 'Hide shipping costs until an address is entered (Not available when using the <a href="%s">Local pickup options powered by the Checkout block</a>)', 'woocommerce' ),
-						'https://woocommerce.com/document/woocommerce-blocks-local-pickup/'
-					);
-					$settings[ $index ]['disabled'] = true;
-					$settings[ $index ]['value']    = 'no';
+					$settings[ $index ]['desc_tip'] =
+						__( 'Local pickup rates will display in the Cart and Checkout blocks, even without an address.', 'woocommerce' );
 					break;
 				}
 			}
@@ -187,7 +166,7 @@ class ShippingController {
 							'tax_status' => array(
 								'description' => __( 'If a cost is defined, this controls if taxes are applied to that cost.', 'woocommerce' ),
 								'type'        => 'string',
-								'enum'        => array( 'taxable', 'none' ),
+								'enum'        => array( ProductTaxStatus::TAXABLE, ProductTaxStatus::NONE ),
 							),
 							'cost'       => array(
 								'description' => __( 'Optional cost to charge for local pickup.', 'woocommerce' ),
@@ -412,7 +391,7 @@ class ShippingController {
 			}
 		);
 
-		// Remove pickup location from rates arrays.
+		// Remove pickup location from rates arrays if not all packages can be picked up or support local pickup.
 		if ( count( $valid_packages ) !== count( $packages ) ) {
 			$packages = array_map(
 				function ( $package ) {
@@ -435,6 +414,90 @@ class ShippingController {
 		return $packages;
 	}
 
+	/**
+	 * Checks whether the address is "full" in the sense that it contains all required fields to calculate shipping rates.
+	 *
+	 * @return bool Whether the customer has a full shipping address (address_1, city, state, postcode, country).
+	 * Only required fields are checked.
+	 */
+	public function has_full_shipping_address() {
+		$customer = WC()->customer;
+
+		if ( ! $customer instanceof WC_Customer ) {
+			return false;
+		}
+
+		// These are the important fields required to get the shipping rates.
+		$shipping_address = array(
+			'city'     => $customer->get_shipping_city(),
+			'state'    => $customer->get_shipping_state(),
+			'postcode' => $customer->get_shipping_postcode(),
+			'country'  => $customer->get_shipping_country(),
+		);
+		$address_fields   = WC()->countries->get_country_locale();
+		$locale_key       = ! empty( $shipping_address['country'] ) && array_key_exists( $shipping_address['country'], $address_fields ) ? $shipping_address['country'] : 'default';
+		$default_locale   = $address_fields['default'];
+		$country_locale   = $address_fields[ $locale_key ] ?? array();
+
+		/**
+		 * Checks all shipping address fields against the country's locale settings.
+		 *
+		 * If there's a `required` setting for the field in the country-specific locale, that setting is used, otherwise
+		 * the default locale's setting is used. If the default locale doesn't have a setting either, the field is
+		 * considered optional and therefore valid, even if empty.
+		 */
+		foreach ( $shipping_address as $key => $value ) {
+			// Skip further checks if the field has a value. From this point on $value is empty.
+			if ( ! empty( $value ) ) {
+				continue;
+			}
+
+			$locale_to_check = isset( $country_locale[ $key ]['required'] ) ? $country_locale : $default_locale;
+
+			// If the locale requires the field return false.
+			if ( isset( $locale_to_check[ $key ]['required'] ) && true === wc_string_to_bool( $locale_to_check[ $key ]['required'] ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Remove shipping (i.e. delivery, not local pickup) if
+	 * "Hide shipping costs until an address is entered" is enabled,
+	 * and no address has been entered yet.
+	 *
+	 * @param array $packages Array of shipping packages.
+	 * @return array
+	 */
+	public function remove_shipping_if_no_address( $packages ) {
+		$shipping_cost_requires_address = wc_string_to_bool( get_option( 'woocommerce_shipping_cost_requires_address', 'no' ) );
+
+		// Return early here for a small performance gain if we don't need to hide shipping costs until an address is entered.
+		if ( ! $shipping_cost_requires_address ) {
+			return $packages;
+		}
+
+		$has_full_address = $this->has_full_shipping_address();
+
+		if ( $has_full_address ) {
+			return $packages;
+		}
+
+		return array_map(
+			function ( $package ) {
+				// Package rates is always an array due to a check in core.
+				$package['rates'] = array_filter(
+					$package['rates'],
+					function ( $rate ) {
+						return $rate instanceof WC_Shipping_Rate && in_array( $rate->get_method_id(), LocalPickupUtils::get_local_pickup_method_ids(), true );
+					}
+				);
+				return $package;
+			},
+			$packages
+		);
+	}
 	/**
 	 * Track local pickup settings changes via Store API
 	 *

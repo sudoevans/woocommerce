@@ -207,11 +207,11 @@ class CheckoutSchema extends AbstractSchema {
 	/**
 	 * Get the checkout response based on the current order and any payments.
 	 *
-	 * @param \WC_Order     $order Order object.
-	 * @param PaymentResult $payment_result Payment result object.
+	 * @param \WC_Order          $order          Order object.
+	 * @param PaymentResult|null $payment_result Payment result object.
 	 * @return array
 	 */
-	protected function get_checkout_response( \WC_Order $order, PaymentResult $payment_result = null ) {
+	protected function get_checkout_response( \WC_Order $order, ?PaymentResult $payment_result = null ) {
 		return [
 			'order_id'          => $order->get_id(),
 			'status'            => $order->get_status(),
@@ -319,10 +319,17 @@ class CheckoutSchema extends AbstractSchema {
 					},
 					$field['options']
 				);
+				if ( true !== $field['required'] ) {
+					$field_schema['enum'][] = '';
+				}
 			}
 
 			if ( 'checkbox' === $field['type'] ) {
 				$field_schema['type'] = 'boolean';
+			}
+
+			if ( 'checkbox' === $field['type'] && true === $field['required'] ) {
+				$field_schema['enum'][] = true;
 			}
 
 			$schema[ $key ] = $field_schema;
@@ -376,7 +383,9 @@ class CheckoutSchema extends AbstractSchema {
 	}
 
 	/**
-	 * Validate additional fields object.
+	 * Validate additional fields object. This does not validate required fields nor customer validation rules because
+	 * this may be a partial request. That will happen later when the full request is processed during POST. This only
+	 * validates against the schema.
 	 *
 	 * @see rest_validate_value_from_schema
 	 *
@@ -390,19 +399,14 @@ class CheckoutSchema extends AbstractSchema {
 		$additional_field_schema = $this->get_additional_fields_schema();
 
 		// Loop over the schema instead of the fields. This is to ensure missing fields are validated.
-		foreach ( $additional_field_schema as $key => $schema ) {
-			if ( ! isset( $fields[ $key ] ) && ! $schema['required'] ) {
-				// Optional fields can go missing.
+		foreach ( $additional_field_schema as $key => $field_schema ) {
+			// Optional fields can go missing.
+			if ( ! isset( $fields[ $key ] ) && ! $field_schema['required'] ) {
 				continue;
 			}
 
 			$field_value = isset( $fields[ $key ] ) ? $fields[ $key ] : null;
-			$result      = rest_validate_value_from_schema( $field_value, $schema, $key );
-
-			// Only allow custom validation on fields that pass the schema validation.
-			if ( true === $result ) {
-				$result = $this->additional_fields_controller->validate_field( $key, $field_value );
-			}
+			$result      = rest_validate_value_from_schema( $field_value, $field_schema, $key );
 
 			if ( is_wp_error( $result ) && $result->has_errors() ) {
 				$location = $this->additional_fields_controller->get_field_location( $key );
@@ -415,18 +419,6 @@ class CheckoutSchema extends AbstractSchema {
 						$code
 					);
 				}
-				$errors->merge_from( $result );
-			}
-		}
-
-		// Validate groups of properties per registered location.
-		$locations = array( 'contact', 'order' );
-
-		foreach ( $locations as $location ) {
-			$location_fields = $this->additional_fields_controller->filter_fields_for_location( $fields, $location );
-			$result          = $this->additional_fields_controller->validate_fields_for_location( $location_fields, $location, 'other' );
-
-			if ( is_wp_error( $result ) && $result->has_errors() ) {
 				$errors->merge_from( $result );
 			}
 		}

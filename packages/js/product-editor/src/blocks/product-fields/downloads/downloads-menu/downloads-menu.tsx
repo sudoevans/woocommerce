@@ -18,10 +18,10 @@ export function DownloadsMenu( {
 	maxUploadFileSize,
 	onUploadSuccess,
 	onUploadError,
+	onLinkError,
 }: DownloadsMenuProps ) {
 	return (
 		<Dropdown
-			// @ts-expect-error missing prop in types.
 			popoverProps={ {
 				placement: 'bottom-end',
 			} }
@@ -32,7 +32,7 @@ export function DownloadsMenu( {
 					icon={ isOpen ? chevronUp : chevronDown }
 					variant="secondary"
 					onClick={ onToggle }
-					className="woocommerce-downloads-menu__toogle"
+					className="woocommerce-downloads-menu__toggle"
 				>
 					<span>{ __( 'Add new', 'woocommerce' ) }</span>
 				</Button>
@@ -47,15 +47,21 @@ export function DownloadsMenu( {
 								onUploadSuccess( files );
 								onClose();
 							} }
-							onUploadError={ onUploadError }
+							onUploadError={ ( error ) => {
+								onUploadError( error );
+								onClose();
+							} }
 						/>
 
 						<InsertUrlMenuItem
-							onUploadSuccess={ ( files ) => {
+							onLinkSuccess={ ( files ) => {
 								onUploadSuccess( files );
 								onClose();
 							} }
-							onUploadError={ onUploadError }
+							onLinkError={ ( error ) => {
+								onLinkError( error );
+								onClose();
+							} }
 						/>
 					</MenuGroup>
 				</div>

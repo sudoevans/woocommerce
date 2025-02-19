@@ -12,10 +12,10 @@ export { REVIEWS_STORE_NAME } from './reviews';
 export { NOTES_STORE_NAME } from './notes';
 export { REPORTS_STORE_NAME } from './reports';
 export { COUNTRIES_STORE_NAME } from './countries';
-export { NAVIGATION_STORE_NAME } from './navigation';
 export { OPTIONS_STORE_NAME } from './options';
 export { ITEMS_STORE_NAME } from './items';
 export { PAYMENT_GATEWAYS_STORE_NAME } from './payment-gateways';
+export { PAYMENT_SETTINGS_STORE_NAME } from './payment-settings';
 export { SHIPPING_METHODS_STORE_NAME } from './shipping-methods';
 export { PRODUCTS_STORE_NAME } from './products';
 export { ORDERS_STORE_NAME } from './orders';
@@ -29,13 +29,51 @@ export { EXPERIMENTAL_PRODUCT_VARIATIONS_STORE_NAME } from './product-variations
 export { EXPERIMENTAL_PRODUCT_FORM_STORE_NAME } from './product-form';
 export { EXPERIMENTAL_TAX_CLASSES_STORE_NAME } from './tax-classes';
 export { PaymentGateway } from './payment-gateways/types';
+export {
+	PaymentProvider,
+	PaymentProviderType,
+	PaymentProviderState,
+	PaymentProviderOnboardingState,
+	PaymentGatewayProvider,
+	OfflinePaymentMethodProvider,
+	PaymentExtensionSuggestionProvider,
+	OfflinePmsGroupProvider,
+	SuggestedPaymentExtension,
+	SuggestedPaymentExtensionCategory,
+	PaymentIncentive,
+	EnableGatewayResponse,
+	PaymentGatewayLink,
+	RecommendedPaymentMethod,
+	PluginData,
+} from './payment-settings/types';
 export { ShippingMethod } from './shipping-methods/types';
+
+// Export stores
+export { store as onboardingStore } from './onboarding';
+export { store as experimentalProductAttributesStore } from './product-attributes';
+export { store as experimentalProductAttributeTermsStore } from './product-attribute-terms';
+export { store as experimentalProductVariationsStore } from './product-variations';
+export { store as experimentalProductTagsStore } from './product-tags';
+export { store as experimentalShippingZonesStore } from './shipping-zones';
+export { store as experimentalProductShippingClassesStore } from './product-shipping-classes';
+export { store as experimentalProductCategoriesStore } from './product-categories';
+export { store as experimentalTaxClassesStore } from './tax-classes';
+export { store as notesStore } from './notes';
+export { store as reviewsStore } from './reviews';
+export { store as shippingMethodsStore } from './shipping-methods';
+export { store as settingsStore } from './settings';
+export { store as ordersStore } from './orders';
+export { store as pluginsStore } from './plugins';
+export { store as optionsStore } from './options';
+export { store as userStore } from './user';
+export { store as productsStore } from './products';
+export { store as countriesStore } from './countries';
+export { store as paymentGatewaysStore } from './payment-gateways';
 
 // Export hooks
 export { withSettingsHydration } from './settings/with-settings-hydration';
 export { withOnboardingHydration } from './onboarding/with-onboarding-hydration';
 export { withCurrentUserHydration } from './user/with-current-user-hydration';
-export { withNavigationHydration } from './navigation/with-navigation-hydration';
 export { withPluginsHydration } from './plugins/with-plugins-hydration';
 export {
 	withOptionsHydration,
@@ -85,6 +123,11 @@ export {
 } from './product-form/types';
 export * from './onboarding/types';
 export * from './plugins/types';
+export { PluginSelectors } from './plugins/selectors';
+export { PaymentSelectors } from './payment-gateways/selectors';
+export { OnboardingSelectors } from './onboarding/selectors';
+export { PaymentSettingsSelectors } from './payment-settings/selectors';
+export { ActionDispatchers as PluginActions } from './plugins/actions';
 export * from './products/types';
 export type {
 	PartialProductVariation,
@@ -122,12 +165,12 @@ import type { PLUGINS_STORE_NAME } from './plugins';
 import type { ONBOARDING_STORE_NAME } from './onboarding';
 import type { USER_STORE_NAME } from './user';
 import type { OPTIONS_STORE_NAME } from './options';
-import type { NAVIGATION_STORE_NAME } from './navigation';
 import type { NOTES_STORE_NAME } from './notes';
 import type { REPORTS_STORE_NAME } from './reports';
 import type { ITEMS_STORE_NAME } from './items';
 import type { COUNTRIES_STORE_NAME } from './countries';
 import type { PAYMENT_GATEWAYS_STORE_NAME } from './payment-gateways';
+import type { PAYMENT_SETTINGS_STORE_NAME } from './payment-settings';
 import type { SHIPPING_METHODS_STORE_NAME } from './shipping-methods';
 import type { PRODUCTS_STORE_NAME } from './products';
 import type { ORDERS_STORE_NAME } from './orders';
@@ -148,12 +191,12 @@ export type WCDataStoreName =
 	| typeof ONBOARDING_STORE_NAME
 	| typeof USER_STORE_NAME
 	| typeof OPTIONS_STORE_NAME
-	| typeof NAVIGATION_STORE_NAME
 	| typeof NOTES_STORE_NAME
 	| typeof REPORTS_STORE_NAME
 	| typeof ITEMS_STORE_NAME
 	| typeof COUNTRIES_STORE_NAME
 	| typeof PAYMENT_GATEWAYS_STORE_NAME
+	| typeof PAYMENT_SETTINGS_STORE_NAME
 	| typeof SHIPPING_METHODS_STORE_NAME
 	| typeof PRODUCTS_STORE_NAME
 	| typeof ORDERS_STORE_NAME
@@ -172,6 +215,7 @@ export type WCDataStoreName =
  */
 import { WPDataSelectors } from './types';
 import { PaymentSelectors } from './payment-gateways/selectors';
+import { PaymentSettingsSelectors } from './payment-settings/selectors';
 import { ShippingMethodsSelectors } from './shipping-methods/selectors';
 import { PluginSelectors } from './plugins/selectors';
 import { OnboardingSelectors } from './onboarding/selectors';
@@ -200,14 +244,14 @@ export type WCSelectorType< T > = T extends typeof REVIEWS_STORE_NAME
 	? OnboardingSelectors
 	: T extends typeof PAYMENT_GATEWAYS_STORE_NAME
 	? PaymentSelectors
+	: T extends typeof PAYMENT_SETTINGS_STORE_NAME
+	? PaymentSettingsSelectors
 	: T extends typeof SHIPPING_METHODS_STORE_NAME
 	? ShippingMethodsSelectors
 	: T extends typeof USER_STORE_NAME
 	? WPDataSelectors
 	: T extends typeof OPTIONS_STORE_NAME
 	? OptionsSelectors
-	: T extends typeof NAVIGATION_STORE_NAME
-	? WPDataSelectors
 	: T extends typeof NOTES_STORE_NAME
 	? WPDataSelectors
 	: T extends typeof REPORTS_STORE_NAME

@@ -3,23 +3,27 @@
  */
 import { getSetting, STORE_PAGES } from '@woocommerce/settings';
 import { CountryData } from '@woocommerce/types';
+import type {
+	AdditionalValues,
+	AddressForm,
+	ContactForm,
+} from '@woocommerce/settings';
 
 export type WordCountType =
 	| 'words'
 	| 'characters_excluding_spaces'
 	| 'characters_including_spaces';
 
-interface WcBlocksConfig {
-	buildPhase: number;
+export interface WcBlocksConfig {
 	pluginUrl: string;
-	productCount: number;
+	productCount?: number;
 	defaultAvatar: string;
 	restApiRoutes: Record< string, string[] >;
 	wordCountType: WordCountType;
+	experimentalBlocksEnabled?: boolean;
 }
 
 export const blocksConfig = getSetting( 'wcBlocksConfig', {
-	buildPhase: 1,
 	pluginUrl: '',
 	productCount: 0,
 	defaultAvatar: '',
@@ -30,7 +34,6 @@ export const blocksConfig = getSetting( 'wcBlocksConfig', {
 export const WC_BLOCKS_IMAGE_URL = blocksConfig.pluginUrl + 'assets/images/';
 export const WC_BLOCKS_BUILD_URL =
 	blocksConfig.pluginUrl + 'assets/client/blocks/';
-export const WC_BLOCKS_PHASE = blocksConfig.buildPhase;
 export const SHOP_URL = STORE_PAGES.shop?.permalink;
 export const CHECKOUT_PAGE_ID = STORE_PAGES.checkout?.id;
 export const CHECKOUT_URL = STORE_PAGES.checkout?.permalink;
@@ -43,15 +46,25 @@ export const CART_URL = STORE_PAGES.cart?.permalink;
 export const LOGIN_URL = STORE_PAGES.myaccount?.permalink
 	? STORE_PAGES.myaccount.permalink
 	: getSetting( 'wpLoginUrl', '/wp-login.php' );
+
 export const LOCAL_PICKUP_ENABLED = getSetting< boolean >(
 	'localPickupEnabled',
 	false
 );
 
+export const SHIPPING_METHODS_EXIST = getSetting< boolean >(
+	'shippingMethodsExist',
+	false
+);
+export const SHIPPING_ENABLED = getSetting< boolean >(
+	'shippingEnabled',
+	true
+);
+
 type FieldsLocations = {
-	address: string[];
-	contact: string[];
-	order: string[];
+	address: ( keyof AddressForm )[];
+	contact: ( keyof ContactForm )[];
+	order: ( keyof AdditionalValues )[];
 };
 
 // Contains country names.

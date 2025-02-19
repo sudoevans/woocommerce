@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { useStoreCart } from '@woocommerce/base-context/hooks';
 import { withFilteredAttributes } from '@woocommerce/shared-hocs';
 import {
@@ -9,7 +9,7 @@ import {
 	StoreNoticesContainer,
 } from '@woocommerce/blocks-components';
 import { useSelect } from '@wordpress/data';
-import { CHECKOUT_STORE_KEY } from '@woocommerce/block-data';
+import { checkoutStore } from '@woocommerce/block-data';
 import { noticeContexts } from '@woocommerce/base-context';
 import { useCheckoutBlockContext } from '@woocommerce/blocks/checkout/context';
 
@@ -32,7 +32,7 @@ const FrontendBlock = ( {
 } ) => {
 	const { showFormStepNumbers } = useCheckoutBlockContext();
 	const checkoutIsProcessing = useSelect( ( select ) =>
-		select( CHECKOUT_STORE_KEY ).isProcessing()
+		select( checkoutStore ).isProcessing()
 	);
 	const { cartNeedsPayment } = useStoreCart();
 
@@ -43,10 +43,7 @@ const FrontendBlock = ( {
 		<FormStep
 			id="payment-method"
 			disabled={ checkoutIsProcessing }
-			className={ classnames(
-				'wc-block-checkout__payment-method',
-				className
-			) }
+			className={ clsx( 'wc-block-checkout__payment-method', className ) }
 			title={ title }
 			description={ description }
 			showStepNumber={ showFormStepNumbers }

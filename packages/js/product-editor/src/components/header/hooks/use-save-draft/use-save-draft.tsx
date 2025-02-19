@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { Product } from '@woocommerce/data';
-import { Button, Icon } from '@wordpress/components';
+import { Icon } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
@@ -15,9 +15,10 @@ import { useShortcut } from '@wordpress/keyboard-shortcuts';
  * Internal dependencies
  */
 import { useValidations } from '../../../../contexts/validation-context';
-import { WPError } from '../../../../utils/get-product-error-message';
+import { WPError } from '../../../../hooks/use-error-handler';
 import { SaveDraftButtonProps } from '../../save-draft-button';
 import { recordProductEvent } from '../../../../utils/record-product-event';
+import { formatProductError } from '../../../../utils/format-product-error';
 
 export function useSaveDraft( {
 	productStatus,
@@ -30,7 +31,7 @@ export function useSaveDraft( {
 }: SaveDraftButtonProps & {
 	onSaveSuccess?( product: Product ): void;
 	onSaveError?( error: WPError ): void;
-} ): Button.ButtonProps {
+} ) {
 	const [ productId ] = useEntityProp< number >(
 		'postType',
 		productType,
@@ -43,7 +44,8 @@ export function useSaveDraft( {
 			// @ts-ignore
 			const { hasEditsForEntityRecord, isSavingEntityRecord } =
 				select( 'core' );
-			const isSaving = isSavingEntityRecord< boolean >(
+			// @ts-expect-error Selector is not typed
+			const isSaving = isSavingEntityRecord(
 				'postType',
 				productType,
 				productId
@@ -51,7 +53,8 @@ export function useSaveDraft( {
 
 			return {
 				isDisabled: isSaving,
-				hasEdits: hasEditsForEntityRecord< boolean >(
+				// @ts-expect-error Selector is not typed
+				hasEdits: hasEditsForEntityRecord(
 					'postType',
 					productType,
 					productId
@@ -87,7 +90,7 @@ export function useSaveDraft( {
 			await editEntityRecord( 'postType', productType, productId, {
 				status: 'draft',
 			} );
-			const publishedProduct = await saveEditedEntityRecord< Product >(
+			const publishedProduct = await saveEditedEntityRecord(
 				'postType',
 				productType,
 				productId,
@@ -106,12 +109,17 @@ export function useSaveDraft( {
 			}
 		} catch ( error ) {
 			if ( onSaveError ) {
-				onSaveError( error as WPError );
+				onSaveError(
+					formatProductError(
+						error as WPError,
+						productStatus
+					) as WPError
+				);
 			}
 		}
 	}
 
-	async function handleClick( event: MouseEvent< HTMLButtonElement > ) {
+	async function handleClick( event: MouseEvent< HTMLElement > ) {
 		if ( ariaDisabled ) {
 			return event.preventDefault();
 		}
@@ -150,7 +158,7 @@ export function useSaveDraft( {
 		children,
 		...props,
 		'aria-disabled': ariaDisabled,
-		variant: 'tertiary',
+		variant: 'tertiary' as const,
 		onClick: handleClick,
 	};
 }

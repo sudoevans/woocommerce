@@ -1,9 +1,12 @@
 <?php
 namespace Automattic\WooCommerce\StoreApi\Schemas\V1;
 
+use Automattic\WooCommerce\Enums\ProductType;
 use Automattic\WooCommerce\StoreApi\SchemaController;
 use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
 use Automattic\WooCommerce\StoreApi\Utilities\QuantityLimits;
+use Automattic\WooCommerce\Blocks\Utils\ProductAvailabilityUtils;
+use Automattic\WooCommerce\Enums\ProductStockStatus;
 
 /**
  * ProductSchema class.
@@ -359,6 +362,17 @@ class ProductSchema extends AbstractSchema {
 					],
 				],
 			],
+			'grouped_products'    => [
+				'description' => __( 'List of grouped product IDs, if applicable.', 'woocommerce' ),
+				'type'        => 'array',
+				'context'     => [ 'view', 'edit' ],
+				'items'       => [
+					'description' => __( 'List of grouped product ids.', 'woocommerce' ),
+					'type'        => 'integer',
+					'context'     => [ 'view', 'edit' ],
+					'readonly'    => true,
+				],
+			],
 			'has_options'         => [
 				'description' => __( 'Does the product have additional options before it can be added to the cart?', 'woocommerce' ),
 				'type'        => 'boolean',
@@ -382,6 +396,26 @@ class ProductSchema extends AbstractSchema {
 				'type'        => 'boolean',
 				'context'     => [ 'view', 'edit' ],
 				'readonly'    => true,
+			],
+			'stock_availability'  => [
+				'description' => __( 'Information about the product\'s availability.', 'woocommerce' ),
+				'type'        => 'object',
+				'context'     => [ 'view', 'edit' ],
+				'readonly'    => true,
+				'properties'  => [
+					'text'  => [
+						'description' => __( 'Stock availability text.', 'woocommerce' ),
+						'type'        => 'string',
+						'context'     => [ 'view', 'edit' ],
+						'readonly'    => true,
+					],
+					'class' => [
+						'description' => __( 'Stock availability class.', 'woocommerce' ),
+						'type'        => 'string',
+						'context'     => [ 'view', 'edit' ],
+						'readonly'    => true,
+					],
+				],
 			],
 			'low_stock_remaining' => [
 				'description' => __( 'Quantity left in stock if stock is low, or null if not applicable.', 'woocommerce' ),
@@ -451,13 +485,14 @@ class ProductSchema extends AbstractSchema {
 	 * @return array
 	 */
 	public function get_item_response( $product ) {
+		$availability = ProductAvailabilityUtils::get_product_availability( $product );
 		return [
 			'id'                  => $product->get_id(),
 			'name'                => $this->prepare_html_response( $product->get_title() ),
 			'slug'                => $product->get_slug(),
 			'parent'              => $product->get_parent_id(),
 			'type'                => $product->get_type(),
-			'variation'           => $this->prepare_html_response( $product->is_type( 'variation' ) ? wc_get_formatted_variation( $product, true, true, false ) : '' ),
+			'variation'           => $this->prepare_html_response( $product->is_type( ProductType::VARIATION ) ? wc_get_formatted_variation( $product, true, true, false ) : '' ),
 			'permalink'           => $product->get_permalink(),
 			'sku'                 => $this->prepare_html_response( $product->get_sku() ),
 			'short_description'   => $this->prepare_html_response( wc_format_content( wp_kses_post( $product->get_short_description() ) ) ),
@@ -472,11 +507,16 @@ class ProductSchema extends AbstractSchema {
 			'tags'                => $this->get_term_list( $product, 'product_tag' ),
 			'attributes'          => $this->get_attributes( $product ),
 			'variations'          => $this->get_variations( $product ),
+			'grouped_products'    => $this->get_grouped_products( $product ),
 			'has_options'         => $product->has_options(),
 			'is_purchasable'      => $product->is_purchasable(),
 			'is_in_stock'         => $product->is_in_stock(),
-			'is_on_backorder'     => 'onbackorder' === $product->get_stock_status(),
+			'is_on_backorder'     => ProductStockStatus::ON_BACKORDER === $product->get_stock_status(),
 			'low_stock_remaining' => $this->get_low_stock_remaining( $product ),
+			'stock_availability'  => (object) array(
+				'text'  => $availability['availability'] ?? '',
+				'class' => $availability['class'] ?? '',
+			),
 			'sold_individually'   => $product->is_sold_individually(),
 			'add_to_cart'         => (object) array_merge(
 				[
@@ -566,7 +606,7 @@ class ProductSchema extends AbstractSchema {
 	 * @returns array
 	 */
 	protected function get_variations( \WC_Product $product ) {
-		$variation_ids = $product->is_type( 'variable' ) ? $product->get_visible_children() : [];
+		$variation_ids = $product->is_type( ProductType::VARIABLE ) ? $product->get_visible_children() : [];
 
 		if ( ! count( $variation_ids ) ) {
 			return [];
@@ -661,6 +701,24 @@ class ProductSchema extends AbstractSchema {
 	}
 
 	/**
+	 * Get grouped product IDs.
+	 *
+	 * @param \WC_Product $product Product instance.
+	 * @return array
+	 */
+	protected function get_grouped_products( \WC_Product $product ) {
+		if ( $product->is_type( ProductType::GROUPED ) ) {
+			return array_map(
+				function ( $child ) {
+					return $child->get_id();
+				},
+				$product->get_visible_children(),
+			);
+		}
+		return [];
+	}
+
+	/**
 	 * Get list of product attributes and attribute terms.
 	 *
 	 * @param \WC_Product $product Product instance.
@@ -740,7 +798,7 @@ class ProductSchema extends AbstractSchema {
 		$price_function   = $this->get_price_function_from_tax_display_mode( $tax_display_mode );
 
 		// If we have a variable product, get the price from the variations (this will use the min value).
-		if ( $product->is_type( 'variable' ) ) {
+		if ( $product->is_type( ProductType::VARIABLE ) ) {
 			$regular_price = $product->get_variation_regular_price();
 			$sale_price    = $product->get_variation_sale_price();
 		} else {
@@ -786,7 +844,7 @@ class ProductSchema extends AbstractSchema {
 	protected function get_price_range( \WC_Product $product, $tax_display_mode = '' ) {
 		$tax_display_mode = $this->get_tax_display_mode( $tax_display_mode );
 
-		if ( $product->is_type( 'variable' ) ) {
+		if ( $product->is_type( ProductType::VARIABLE ) ) {
 			$prices = $product->get_variation_prices( true );
 
 			if ( ! empty( $prices['price'] ) && ( min( $prices['price'] ) !== max( $prices['price'] ) ) ) {
@@ -797,8 +855,8 @@ class ProductSchema extends AbstractSchema {
 			}
 		}
 
-		if ( $product->is_type( 'grouped' ) ) {
-			$children       = array_filter( array_map( 'wc_get_product', $product->get_children() ), 'wc_products_array_filter_visible_grouped' );
+		if ( $product->is_type( ProductType::GROUPED ) ) {
+			$children       = $product->get_visible_children();
 			$price_function = 'incl' === $tax_display_mode ? 'wc_get_price_including_tax' : 'wc_get_price_excluding_tax';
 
 			foreach ( $children as $child ) {

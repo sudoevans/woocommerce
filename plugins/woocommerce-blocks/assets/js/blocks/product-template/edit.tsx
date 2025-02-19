@@ -1,8 +1,9 @@
+/* eslint-disable @wordpress/no-unsafe-wp-apis */
 /* eslint-disable @typescript-eslint/naming-convention */
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { memo, useMemo, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
@@ -25,7 +26,11 @@ import type { BlockEditProps, BlockInstance } from '@wordpress/blocks';
 /**
  * Internal dependencies
  */
-import { useGetLocation, useProductCollectionQueryContext } from './utils';
+import {
+	useGetLocation,
+	useProductCollectionQueryContext,
+	parseTemplateSlug,
+} from './utils';
 import './editor.scss';
 import { getDefaultStockStatuses } from '../product-collection/constants';
 
@@ -126,6 +131,46 @@ const ProductContent = withProduct(
 	}
 );
 
+const getOrderPropertiesForDefaultQuery = ( defaultSetting: string ) => {
+	switch ( defaultSetting ) {
+		case 'title':
+			return {
+				orderby: 'title',
+				order: 'asc',
+			};
+		case 'price':
+			return {
+				orderby: 'price',
+				order: 'asc',
+			};
+		case 'price-desc':
+			return {
+				orderby: 'price',
+				order: 'desc',
+			};
+		case 'popularity':
+			return {
+				orderby: 'popularity',
+				order: 'desc',
+			};
+		case 'rating':
+			return {
+				orderby: 'rating',
+				order: 'desc',
+			};
+		case 'date':
+			return {
+				orderby: 'date',
+				order: 'desc',
+			};
+	}
+
+	return {
+		orderby: 'menu_order',
+		order: 'asc',
+	};
+};
+
 const ProductTemplateEdit = (
 	props: BlockEditProps< {
 		clientId: string;
@@ -187,22 +232,14 @@ const ProductTemplateEdit = (
 
 	const { products, blocks } = useSelect(
 		( select ) => {
-			const { getEntityRecords, getTaxonomies } = select( coreStore );
+			const { getEntityRecords, getEditedEntityRecord, getTaxonomies } =
+				select( coreStore );
 			const { getBlocks } = select( blockEditorStore );
 			const taxonomies = getTaxonomies( {
 				type: postType,
 				per_page: -1,
 				context: 'view',
 			} );
-			const templateCategory =
-				inherit &&
-				templateSlug?.startsWith( 'category-' ) &&
-				getEntityRecords( 'taxonomy', 'category', {
-					context: 'view',
-					per_page: 1,
-					_fields: [ 'id' ],
-					slug: templateSlug.replace( 'category-', '' ),
-				} );
 			const query: Record< string, unknown > = {
 				postType,
 				offset: perPage ? perPage * ( page - 1 ) + offset : 0,
@@ -240,16 +277,49 @@ const ProductTemplateEdit = (
 			}
 			// If `inherit` is truthy, adjust conditionally the query to create a better preview.
 			if ( inherit ) {
-				if ( templateCategory ) {
-					query.categories = templateCategory[ 0 ]?.id;
+				const { taxonomy, slug } = parseTemplateSlug( templateSlug );
+
+				if ( taxonomy && slug ) {
+					const taxonomyRecord = getEntityRecords(
+						'taxonomy',
+						taxonomy,
+						{
+							context: 'view',
+							per_page: 1,
+							_fields: [ 'id' ],
+							slug,
+						}
+					);
+
+					if ( taxonomyRecord ) {
+						const taxonomyId = taxonomyRecord[ 0 ]?.id;
+						if ( taxonomy === 'category' ) {
+							query.categories = taxonomyId;
+						} else {
+							// If taxonomy is not `category`, we expect either `product_cat` or `product_tag`
+							query[ taxonomy ] = taxonomyId;
+						}
+					}
 				}
 				query.per_page = loopShopPerPage;
+
+				const settings = getEditedEntityRecord(
+					'root',
+					'site',
+					undefined
+				) as unknown as Record< string, string >;
+
+				const orderProperties = getOrderPropertiesForDefaultQuery(
+					settings.woocommerce_default_catalog_orderby
+				);
+				query.orderby = orderProperties.orderby;
+				query.order = orderProperties.order;
 			}
 			return {
 				products: getEntityRecords( 'postType', postType, {
 					...query,
 					...restQueryArgs,
-					location,
+					productCollectionLocation: location,
 					productCollectionQueryContext,
 					previewState: __privateProductCollectionPreviewState,
 					/**
@@ -295,7 +365,9 @@ const ProductTemplateEdit = (
 
 	const hasLayoutFlex = layoutType === 'flex' && columns > 1;
 	let customClassName = '';
-	if ( hasLayoutFlex ) {
+
+	// We don't want to apply layout styles if there's no products.
+	if ( products && products.length && hasLayoutFlex ) {
 		const dynamicGrid = `wc-block-product-template__responsive columns-${ columns }`;
 		const staticGrid = `is-flex-container columns-${ columns }`;
 
@@ -303,10 +375,11 @@ const ProductTemplateEdit = (
 	}
 
 	const blockProps = useBlockProps( {
-		className: classnames(
+		className: clsx(
 			__unstableLayoutClassNames,
 			'wc-block-product-template',
-			customClassName
+			customClassName,
+			{ [ `is-product-collection-layout-${ layoutType }` ]: layoutType }
 		),
 	} );
 
@@ -322,7 +395,10 @@ const ProductTemplateEdit = (
 		return (
 			<p { ...blockProps }>
 				{ ' ' }
-				{ __( 'No results found.', 'woocommerce' ) }
+				{ __(
+					'No products to display. Try adjusting the filters in the block settings panel.',
+					'woocommerce'
+				) }
 			</p>
 		);
 	}

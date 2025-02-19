@@ -12,8 +12,17 @@ import * as actions from './actions';
 import * as selectors from './selectors';
 import { reducer } from './reducer';
 import { ResourceState } from '../crud/reducer';
+import {
+	ProductVariation,
+	ProductVariationActions,
+	ProductVariationSelectors,
+} from './types';
 
-createCrudDataStore( {
+export const store = createCrudDataStore<
+	ProductVariation,
+	ProductVariationActions,
+	ProductVariationSelectors
+>( {
 	storeName: STORE_NAME,
 	resourceName: 'ProductVariation',
 	pluralResourceName: 'ProductVariations',

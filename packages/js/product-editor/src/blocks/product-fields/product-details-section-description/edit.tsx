@@ -18,48 +18,54 @@ import {
 import { __ } from '@wordpress/i18n';
 import * as icons from '@wordpress/icons';
 import { useWooBlockProps } from '@woocommerce/block-templates';
-import { Product } from '@woocommerce/data';
+import type { ProductStatus, Product } from '@woocommerce/data';
 import { getNewPath } from '@woocommerce/navigation';
 import { recordEvent } from '@woocommerce/tracks';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore No types for this exist yet.
 // eslint-disable-next-line @woocommerce/dependency-group
-import { useEntityId } from '@wordpress/core-data';
+import { useEntityId, useEntityProp } from '@wordpress/core-data';
 
 /**
  * Internal dependencies
  */
-import { ProductEditorSettings } from '../../../components';
 import { BlockFill } from '../../../components/block-slot-fill';
 import { useValidations } from '../../../contexts/validation-context';
 import { TRACKS_SOURCE } from '../../../constants';
-import {
-	WPError,
-	getProductErrorMessage,
-} from '../../../utils/get-product-error-message';
+import { WPError, useErrorHandler } from '../../../hooks/use-error-handler';
 import type {
 	ProductEditorBlockEditProps,
+	ProductFormPostProps,
 	ProductTemplate,
 } from '../../../types';
 import { ProductDetailsSectionDescriptionBlockAttributes } from './types';
 import * as wooIcons from '../../../icons';
+import isProductFormTemplateSystemEnabled from '../../../utils/is-product-form-template-system-enabled';
+import { formatProductError } from '../../../utils/format-product-error';
 
 export function ProductDetailsSectionDescriptionBlockEdit( {
 	attributes,
 	clientId,
+	context: { selectedTab },
 }: ProductEditorBlockEditProps< ProductDetailsSectionDescriptionBlockAttributes > ) {
 	const blockProps = useWooBlockProps( attributes );
+
+	const { getProductErrorMessageAndProps } = useErrorHandler();
 
 	const { productTemplates, productTemplate: selectedProductTemplate } =
 		useSelect( ( select ) => {
 			const { getEditorSettings } = select( 'core/editor' );
-			return getEditorSettings() as ProductEditorSettings;
-		} );
+			// @ts-expect-error Selector is not typed
+			return getEditorSettings();
+		}, [] );
 
 	// eslint-disable-next-line @wordpress/no-unused-vars-before-return
 	const [ supportedProductTemplates, unsupportedProductTemplates ] =
-		productTemplates.reduce< [ ProductTemplate[], ProductTemplate[] ] >(
-			( [ supported, unsupported ], productTemplate ) => {
+		productTemplates.reduce(
+			(
+				[ supported, unsupported ]: ProductTemplate[][],
+				productTemplate: ProductTemplate
+			) => {
 				if ( productTemplate.isSelectableByUser ) {
 					if ( productTemplate.layoutTemplateId ) {
 						supported.push( productTemplate );
@@ -74,6 +80,12 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 
 	const productId = useEntityId( 'postType', 'product' );
 
+	const [ productStatus ] = useEntityProp< ProductStatus >(
+		'postType',
+		'product',
+		'status'
+	);
+
 	const { validate } = useValidations< Product >();
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
@@ -85,6 +97,7 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 	const rootClientId = useSelect(
 		( select ) => {
 			const { getBlockRootClientId } = select( 'core/block-editor' );
+			// @ts-expect-error Selector is not typed
 			return getBlockRootClientId( clientId );
 		},
 		[ clientId ]
@@ -93,6 +106,31 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 	const [ unsupportedProductTemplate, setUnsupportedProductTemplate ] =
 		useState< ProductTemplate >();
 
+	// Pull the product templates from the store.
+	const productFormPosts = useSelect(
+		(
+			sel: ( key: string ) => {
+				getEntityRecords: (
+					kind: string,
+					name: string,
+					query: Record< string, unknown >
+				) => ProductFormPostProps[] | undefined;
+			}
+		) => {
+			// Do not fetch product form posts if the feature is not enabled.
+			if ( ! isProductFormTemplateSystemEnabled() ) {
+				return [];
+			}
+
+			return (
+				sel( 'core' ).getEntityRecords( 'postType', 'product_form', {
+					per_page: -1,
+				} ) || []
+			);
+		},
+		[]
+	) as ProductFormPostProps[];
+
 	const { isSaving } = useSelect(
 		( select ) => {
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -100,7 +138,8 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 			const { isSavingEntityRecord } = select( 'core' );
 
 			return {
-				isSaving: isSavingEntityRecord< boolean >(
+				// @ts-expect-error Selector is not typed
+				isSaving: isSavingEntityRecord(
 					'postType',
 					'product',
 					productId
@@ -146,7 +185,7 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 					],
 				} );
 
-				await saveEditedEntityRecord< Product >(
+				await saveEditedEntityRecord(
 					'postType',
 					'product',
 					productId,
@@ -164,8 +203,15 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 					template: productTemplate.id,
 				} );
 			} catch ( error ) {
-				const message = getProductErrorMessage( error as WPError );
-				createErrorNotice( message );
+				const { message, errorProps } =
+					await getProductErrorMessageAndProps(
+						formatProductError(
+							error as WPError,
+							productStatus
+						) as WPError,
+						selectedTab
+					);
+				createErrorNotice( message, errorProps );
 			}
 
 			onClose();
@@ -189,6 +235,12 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 		return <Icon icon={ icon } size={ 24 } />;
 	}
 
+	/**
+	 * Returns a function that renders a MenuItem component.
+	 *
+	 * @param {Function} onClose - Function to close the dropdown.
+	 * @return {Function} Function that renders a MenuItem component.
+	 */
 	function getMenuItem( onClose: () => void ) {
 		return function renderMenuItem( productTemplate: ProductTemplate ) {
 			const isSelected =
@@ -228,7 +280,7 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 
 			await validate( productData );
 
-			const product = ( await saveEditedEntityRecord< Product >(
+			const product = ( await saveEditedEntityRecord(
 				'postType',
 				'product',
 				productId,
@@ -273,12 +325,19 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 			// by the product editor.
 			window.location.href = getNewPath( {}, `/product/${ productId }` );
 		} catch ( error ) {
-			const message = getProductErrorMessage( error as WPError );
-			createErrorNotice( message );
+			const { message, errorProps } =
+				await getProductErrorMessageAndProps(
+					formatProductError(
+						error as WPError,
+						productStatus
+					) as WPError,
+					selectedTab
+				);
+			createErrorNotice( message, errorProps );
 		}
 	}
 
-	function toogleButtonClickHandler( isOpen: boolean, onToggle: () => void ) {
+	function toggleButtonClickHandler( isOpen: boolean, onToggle: () => void ) {
 		return function onClick() {
 			onToggle();
 
@@ -286,10 +345,12 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 				recordEvent( 'product_template_selector_open', {
 					source: TRACKS_SOURCE,
 					supported_templates: supportedProductTemplates.map(
-						( productTemplate ) => productTemplate.id
+						( productTemplate: ProductTemplate ) =>
+							productTemplate.id
 					),
 					unsupported_template: unsupportedProductTemplates.map(
-						( productTemplate ) => productTemplate.id
+						( productTemplate: ProductTemplate ) =>
+							productTemplate.id
 					),
 				} );
 			}
@@ -317,7 +378,6 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 				</p>
 
 				<Dropdown
-					// @ts-expect-error Property does exists
 					focusOnMount={ true }
 					popoverProps={ {
 						placement: 'bottom-start',
@@ -326,7 +386,7 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 						<Button
 							aria-expanded={ isOpen }
 							variant="link"
-							onClick={ toogleButtonClickHandler(
+							onClick={ toggleButtonClickHandler(
 								isOpen,
 								onToggle
 							) }
@@ -344,10 +404,25 @@ export function ProductDetailsSectionDescriptionBlockEdit( {
 								) }
 							</MenuGroup>
 
+							{ isProductFormTemplateSystemEnabled() && (
+								<MenuGroup>
+									{ productFormPosts.map( ( formPost ) => (
+										<MenuItem
+											key={ formPost.id }
+											icon={ resolveIcon( 'external' ) }
+											info={ formPost.excerpt.raw }
+											iconPosition="left"
+											onClick={ onClose } // close the dropdown for now
+										>
+											{ formPost.title.rendered }
+										</MenuItem>
+									) ) }
+								</MenuGroup>
+							) }
+
 							{ unsupportedProductTemplates.length > 0 && (
 								<MenuGroup>
 									<Dropdown
-										// @ts-expect-error Property does exists
 										popoverProps={ {
 											placement: 'right-start',
 										} }

@@ -4,7 +4,7 @@
 import { useWooBlockProps } from '@woocommerce/block-templates';
 import { Link } from '@woocommerce/components';
 import {
-	EXPERIMENTAL_PRODUCT_SHIPPING_CLASSES_STORE_NAME,
+	experimentalProductShippingClassesStore,
 	ProductShippingClass,
 	PartialProduct,
 } from '@woocommerce/data';
@@ -34,7 +34,12 @@ type ServerErrorResponse = {
 	code: string;
 };
 
-export const DEFAULT_SHIPPING_CLASS_OPTIONS: SelectControl.Option[] = [
+type Select = {
+	label: string;
+	value: string;
+};
+
+export const DEFAULT_SHIPPING_CLASS_OPTIONS: Array< Select > = [
 	{ value: '', label: __( 'No shipping class', 'woocommerce' ) },
 	{
 		value: ADD_NEW_SHIPPING_CLASS_OPTION_VALUE,
@@ -44,12 +49,17 @@ export const DEFAULT_SHIPPING_CLASS_OPTIONS: SelectControl.Option[] = [
 
 function mapShippingClassToSelectOption(
 	shippingClasses: ProductShippingClass[]
-): SelectControl.Option[] {
+): Array< Select > {
 	return shippingClasses.map( ( { slug, name } ) => ( {
 		value: slug,
 		label: name,
 	} ) );
 }
+
+/*
+ * Query to fetch shipping classes.
+ */
+const shippingClassRequestQuery: Partial< ProductShippingClass > = {};
 
 function extractDefaultShippingClassFromProduct(
 	categories?: PartialProduct[ 'categories' ],
@@ -78,8 +88,8 @@ export function Edit( {
 
 	const blockProps = useWooBlockProps( attributes );
 
-	const { createProductShippingClass, invalidateResolution } = useDispatch(
-		EXPERIMENTAL_PRODUCT_SHIPPING_CLASSES_STORE_NAME
+	const { createProductShippingClass } = useDispatch(
+		experimentalProductShippingClassesStore
 	);
 
 	const { createErrorNotice } = useDispatch( 'core/notices' );
@@ -125,14 +135,14 @@ export function Edit( {
 	const { shippingClasses } = useSelect(
 		( select ) => {
 			const { getProductShippingClasses } = select(
-				EXPERIMENTAL_PRODUCT_SHIPPING_CLASSES_STORE_NAME
+				experimentalProductShippingClassesStore
 			);
 			return {
 				shippingClasses:
 					( isInSelectedTab &&
-						getProductShippingClasses<
-							ProductShippingClass[]
-						>() ) ||
+						getProductShippingClasses(
+							shippingClassRequestQuery
+						) ) ||
 					[],
 			};
 		},
@@ -212,15 +222,12 @@ export function Edit( {
 						shippingClasses
 					) }
 					onAdd={ ( shippingClassValues ) =>
-						createProductShippingClass<
-							Promise< ProductShippingClass >
-						>( shippingClassValues )
-							.then( ( value ) => {
+						createProductShippingClass( shippingClassValues, {
+							optimisticQueryUpdate: shippingClassRequestQuery,
+						} )
+							.then( ( value: ProductShippingClass ) => {
 								recordEvent(
 									'product_new_shipping_class_modal_add_button_click'
-								);
-								invalidateResolution(
-									'getProductShippingClasses'
 								);
 								setShippingClass( value.slug );
 								return value;

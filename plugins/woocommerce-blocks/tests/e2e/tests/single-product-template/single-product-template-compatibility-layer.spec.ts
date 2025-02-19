@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { test, expect } from '@woocommerce/e2e-playwright-utils';
+import { test, expect } from '@woocommerce/e2e-utils';
 
 /**
  * Internal dependencies
@@ -14,7 +14,7 @@ type Scenario = {
 	amount: number;
 };
 
-const singleOccurranceScenarios: Scenario[] = [
+const singleOccurrenceScenarios: Scenario[] = [
 	{
 		title: 'Before Main Content',
 		dataTestId: 'woocommerce_before_main_content',
@@ -83,25 +83,155 @@ const singleOccurranceScenarios: Scenario[] = [
 	},
 ];
 
-test.describe( 'Compatibility Layer with Product Collection block', () => {
+const simpleProductAddToCartWithOptionsBlockHooks: Scenario[] = [
+	{
+		title: 'Before Add To Cart Form',
+		dataTestId: 'woocommerce_before_add_to_cart_form',
+		content: 'Hook: woocommerce_before_add_to_cart_form',
+		amount: 1,
+	},
+	{
+		title: 'After Add To Cart Form',
+		dataTestId: 'woocommerce_after_add_to_cart_form',
+		content: 'Hook: woocommerce_after_add_to_cart_form',
+		amount: 1,
+	},
+	{
+		title: 'Before Add To Cart Quantity',
+		dataTestId: 'woocommerce_before_add_to_cart_quantity',
+		content: 'Hook: woocommerce_before_add_to_cart_quantity',
+		amount: 1,
+	},
+	{
+		title: 'After Add To Cart Quantity',
+		dataTestId: 'woocommerce_after_add_to_cart_quantity',
+		content: 'Hook: woocommerce_after_add_to_cart_quantity',
+		amount: 1,
+	},
+	{
+		title: 'Before Add To Cart Button',
+		dataTestId: 'woocommerce_before_add_to_cart_button',
+		content: 'Hook: woocommerce_before_add_to_cart_button',
+		amount: 1,
+	},
+	{
+		title: 'After Add To Cart Button',
+		dataTestId: 'woocommerce_after_add_to_cart_button',
+		content: 'Hook: woocommerce_after_add_to_cart_button',
+		amount: 1,
+	},
+];
+const variableProductAddToCartWithOptionsBlockHooks: Scenario[] = [
+	{
+		title: 'Before Add To Cart Form',
+		dataTestId: 'woocommerce_before_add_to_cart_form',
+		content: 'Hook: woocommerce_before_add_to_cart_form',
+		amount: 1,
+	},
+	{
+		title: 'After Add To Cart Form',
+		dataTestId: 'woocommerce_after_add_to_cart_form',
+		content: 'Hook: woocommerce_after_add_to_cart_form',
+		amount: 1,
+	},
+	{
+		title: 'Before Variations Form',
+		dataTestId: 'woocommerce_before_variations_form',
+		content: 'Hook: woocommerce_before_variations_form',
+		amount: 1,
+	},
+	{
+		title: 'After Variations Form',
+		dataTestId: 'woocommerce_after_variations_form',
+		content: 'Hook: woocommerce_after_variations_form',
+		amount: 1,
+	},
+];
+
+test.describe( 'Compatibility Layer in Single Product template', () => {
 	test.beforeEach( async ( { requestUtils } ) => {
 		await requestUtils.activatePlugin(
 			'woocommerce-blocks-test-single-product-template-compatibility-layer'
 		);
 	} );
 
-	// eslint-disable-next-line playwright/valid-describe-callback
-	test.describe( 'Product Archive with Product Collection block', () => {
-		for ( const scenario of singleOccurranceScenarios ) {
-			test( `${ scenario.title } is attached to the page`, async ( {
-				page,
-			} ) => {
-				await page.goto( '/product/hoodie/' );
-				const hooks = page.getByTestId( scenario.dataTestId );
+	test( 'hooks are attached to the page', async ( { page } ) => {
+		await page.goto( '/product/hoodie/' );
 
-				await expect( hooks ).toHaveCount( scenario.amount );
-				await expect( hooks ).toHaveText( scenario.content );
-			} );
+		for ( const scenario of singleOccurrenceScenarios ) {
+			const hooks = page.getByTestId( scenario.dataTestId );
+
+			await expect(
+				hooks,
+				`Expected ${ scenario.dataTestId } hook to appear ${ scenario.amount } time(s)`
+			).toHaveCount( scenario.amount );
+			await expect(
+				hooks,
+				`Expected ${ scenario.dataTestId } hook to have text "${ scenario.content }"`
+			).toHaveText( scenario.content );
+		}
+	} );
+
+	test( 'hooks are attached to the page when using the Add to Cart with Options block', async ( {
+		page,
+		admin,
+		editor,
+		requestUtils,
+	} ) => {
+		/* Switch to the blockified Add to Cart with Options block to be able to test all hooks */
+		await requestUtils.setFeatureFlag( 'experimental-blocks', true );
+		await requestUtils.setFeatureFlag( 'blockified-add-to-cart', true );
+		await admin.visitSiteEditor( {
+			postId: 'woocommerce/woocommerce//single-product',
+			postType: 'wp_template',
+			canvas: 'edit',
+		} );
+		const addToCartFormBlock = await editor.getBlockByName(
+			'woocommerce/add-to-cart-form'
+		);
+		await editor.selectBlocks( addToCartFormBlock );
+
+		await page
+			.getByRole( 'button', { name: 'Upgrade to the blockified' } )
+			.click();
+
+		await expect(
+			editor.canvas.getByLabel(
+				'Block: Quantity Selector (Experimental)'
+			)
+		).toBeVisible();
+		await editor.saveSiteEditorEntities( {
+			isOnlyCurrentEntityDirty: true,
+		} );
+
+		await page.goto( '/product/cap/' );
+
+		for ( const scenario of simpleProductAddToCartWithOptionsBlockHooks ) {
+			const hooks = page.getByTestId( scenario.dataTestId );
+
+			await expect(
+				hooks,
+				`Expected ${ scenario.dataTestId } hook to appear ${ scenario.amount } time(s) in simple product page`
+			).toHaveCount( scenario.amount );
+			await expect(
+				hooks,
+				`Expected ${ scenario.dataTestId } hook to have text "${ scenario.content }" in simple product page`
+			).toHaveText( scenario.content );
+		}
+
+		await page.goto( '/product/hoodie/' );
+
+		for ( const scenario of variableProductAddToCartWithOptionsBlockHooks ) {
+			const hooks = page.getByTestId( scenario.dataTestId );
+
+			await expect(
+				hooks,
+				`Expected ${ scenario.dataTestId } hook to appear ${ scenario.amount } time(s) in variable product page`
+			).toHaveCount( scenario.amount );
+			await expect(
+				hooks,
+				`Expected ${ scenario.dataTestId } hook to have text "${ scenario.content }" in variable product page`
+			).toHaveText( scenario.content );
 		}
 	} );
 } );

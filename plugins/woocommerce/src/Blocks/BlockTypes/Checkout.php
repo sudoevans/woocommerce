@@ -1,8 +1,13 @@
 <?php
+declare( strict_types = 1);
 namespace Automattic\WooCommerce\Blocks\BlockTypes;
 
 use Automattic\WooCommerce\StoreApi\Utilities\LocalPickupUtils;
 use Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils;
+use Automattic\WooCommerce\Blocks\Package;
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields;
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFieldsSchema\Validation;
+use Automattic\WooCommerce\Admin\Features\Features;
 
 /**
  * Checkout class.
@@ -32,13 +37,14 @@ class Checkout extends AbstractBlock {
 	 */
 	protected function initialize() {
 		parent::initialize();
+		add_action( 'rest_api_init', array( $this, 'register_settings' ) );
 		add_action( 'wp_loaded', array( $this, 'register_patterns' ) );
 		// This prevents the page redirecting when the cart is empty. This is so the editor still loads the page preview.
 		add_filter(
 			'woocommerce_checkout_redirect_empty_cart',
-			function( $return ) {
+			function ( $redirect_empty_cart ) {
 				// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				return isset( $_GET['_wp-find-template'] ) ? false : $return;
+				return isset( $_GET['_wp-find-template'] ) ? false : $redirect_empty_cart;
 			}
 		);
 
@@ -55,6 +61,63 @@ class Checkout extends AbstractBlock {
 		wp_dequeue_script( 'wc-password-strength-meter' );
 		wp_dequeue_script( 'selectWoo' );
 		wp_dequeue_style( 'select2' );
+	}
+
+	/**
+	 * Exposes settings exposed by the checkout block.
+	 */
+	public function register_settings() {
+		register_setting(
+			'options',
+			'woocommerce_checkout_phone_field',
+			array(
+				'type'         => 'object',
+				'description'  => __( 'Controls the display of the phone field in checkout.', 'woocommerce' ),
+				'label'        => __( 'Phone number', 'woocommerce' ),
+				'show_in_rest' => array(
+					'name'   => 'woocommerce_checkout_phone_field',
+					'schema' => array(
+						'type' => 'string',
+						'enum' => array( 'optional', 'required', 'hidden' ),
+					),
+				),
+				'default'      => CartCheckoutUtils::get_phone_field_visibility(),
+			)
+		);
+		register_setting(
+			'options',
+			'woocommerce_checkout_company_field',
+			array(
+				'type'         => 'object',
+				'description'  => __( 'Controls the display of the company field in checkout.', 'woocommerce' ),
+				'label'        => __( 'Company', 'woocommerce' ),
+				'show_in_rest' => array(
+					'name'   => 'woocommerce_checkout_company_field',
+					'schema' => array(
+						'type' => 'string',
+						'enum' => array( 'optional', 'required', 'hidden' ),
+					),
+				),
+				'default'      => CartCheckoutUtils::get_company_field_visibility(),
+			)
+		);
+		register_setting(
+			'options',
+			'woocommerce_checkout_address_2_field',
+			array(
+				'type'         => 'object',
+				'description'  => __( 'Controls the display of the apartment (address_2) field in checkout.', 'woocommerce' ),
+				'label'        => __( 'Address Line 2', 'woocommerce' ),
+				'show_in_rest' => array(
+					'name'   => 'woocommerce_checkout_address_2_field',
+					'schema' => array(
+						'type' => 'string',
+						'enum' => array( 'optional', 'required', 'hidden' ),
+					),
+				),
+				'default'      => CartCheckoutUtils::get_address_2_field_visibility(),
+			)
+		);
 	}
 
 	/**
@@ -94,10 +157,25 @@ class Checkout extends AbstractBlock {
 	 * @return array|string
 	 */
 	protected function get_block_type_script( $key = null ) {
+		$dependencies = [];
+
+		// Load password strength meter script asynchronously if needed.
+		if ( ! is_user_logged_in() && 'no' === get_option( 'woocommerce_registration_generate_password' ) ) {
+			$dependencies[] = 'zxcvbn-async';
+		}
+
+		if ( Features::is_enabled( 'experimental-blocks' ) ) {
+			$checkout_fields = Package::container()->get( CheckoutFields::class );
+			// Load schema parser asynchronously if we need it.
+			if ( Validation::has_field_schema( $checkout_fields->get_additional_fields() ) ) {
+				$dependencies[] = 'wc-schema-parser';
+			}
+		}
+
 		$script = [
 			'handle'       => 'wc-' . $this->block_name . '-block-frontend',
 			'path'         => $this->asset_api->get_block_asset_build_path( $this->block_name . '-frontend' ),
-			'dependencies' => [],
+			'dependencies' => $dependencies,
 		];
 		return $key ? $script[ $key ] : $script;
 	}
@@ -280,10 +358,13 @@ class Checkout extends AbstractBlock {
 		$post_blocks = parse_blocks( $post->post_content );
 		$title       = $this->find_local_pickup_text_in_checkout_block( $post_blocks );
 
-		if ( $title ) {
-			$pickup_location_settings['title'] = $title;
-			update_option( 'woocommerce_pickup_location_settings', $pickup_location_settings );
+		// Set the title to be an empty string if it isn't a string. This will make it fall back to the default value of "Pickup".
+		if ( ! is_string( $title ) ) {
+			$title = '';
 		}
+
+		$pickup_location_settings['title'] = $title;
+		update_option( 'woocommerce_pickup_location_settings', $pickup_location_settings );
 	}
 
 	/**
@@ -354,6 +435,7 @@ class Checkout extends AbstractBlock {
 		$this->asset_data_registry->add( 'displayCartPricesIncludingTax', 'incl' === get_option( 'woocommerce_tax_display_cart' ) );
 		$this->asset_data_registry->add( 'displayItemizedTaxes', 'itemized' === get_option( 'woocommerce_tax_total_display' ) );
 		$this->asset_data_registry->add( 'forcedBillingAddress', 'billing_only' === get_option( 'woocommerce_ship_to_destination' ) );
+		$this->asset_data_registry->add( 'generatePassword', filter_var( get_option( 'woocommerce_registration_generate_password' ), FILTER_VALIDATE_BOOLEAN ) );
 		$this->asset_data_registry->add( 'taxesEnabled', wc_tax_enabled() );
 		$this->asset_data_registry->add( 'couponsEnabled', wc_coupons_enabled() );
 		$this->asset_data_registry->add( 'shippingEnabled', wc_shipping_enabled() );
@@ -362,23 +444,35 @@ class Checkout extends AbstractBlock {
 		$this->asset_data_registry->add( 'isBlockTheme', wc_current_theme_is_fse_theme() );
 
 		$pickup_location_settings = LocalPickupUtils::get_local_pickup_settings();
+		$local_pickup_method_ids  = LocalPickupUtils::get_local_pickup_method_ids();
+
 		$this->asset_data_registry->add( 'localPickupEnabled', $pickup_location_settings['enabled'] );
 		$this->asset_data_registry->add( 'localPickupText', $pickup_location_settings['title'] );
+		$this->asset_data_registry->add( 'localPickupCost', $pickup_location_settings['cost'] );
+		$this->asset_data_registry->add( 'collectableMethodIds', $local_pickup_method_ids );
+		$this->asset_data_registry->add( 'shippingMethodsExist', CartCheckoutUtils::shipping_methods_exist() > 0 );
 
 		$is_block_editor = $this->is_block_editor();
 
-		// Hydrate the following data depending on admin or frontend context.
-		if ( $is_block_editor && ! $this->asset_data_registry->exists( 'shippingMethodsExist' ) ) {
-			$methods_exist = wc_get_shipping_method_count( false, true ) > 0;
-			$this->asset_data_registry->add( 'shippingMethodsExist', $methods_exist );
+		if ( $is_block_editor && ! $this->asset_data_registry->exists( 'localPickupLocations' ) ) {
+			$this->asset_data_registry->add(
+				'localPickupLocations',
+				array_map(
+					function ( $location ) {
+						$location['formatted_address'] = wc()->countries->get_formatted_address( $location['address'], ', ' );
+						return $location;
+					},
+					get_option( 'pickup_location_pickup_locations', array() )
+				)
+			);
 		}
 
 		if ( $is_block_editor && ! $this->asset_data_registry->exists( 'globalShippingMethods' ) ) {
 			$shipping_methods           = WC()->shipping()->get_shipping_methods();
 			$formatted_shipping_methods = array_reduce(
 				$shipping_methods,
-				function( $acc, $method ) {
-					if ( in_array( $method->id, LocalPickupUtils::get_local_pickup_method_ids(), true ) ) {
+				function ( $acc, $method ) use ( $local_pickup_method_ids ) {
+					if ( in_array( $method->id, $local_pickup_method_ids, true ) ) {
 						return $acc;
 					}
 					if ( $method->supports( 'settings' ) ) {
@@ -405,11 +499,11 @@ class Checkout extends AbstractBlock {
 			$payment_methods           = $this->get_enabled_payment_gateways();
 			$formatted_payment_methods = array_reduce(
 				$payment_methods,
-				function( $acc, $method ) {
+				function ( $acc, $method ) {
 					$acc[] = [
 						'id'          => $method->id,
-						'title'       => $method->method_title,
-						'description' => $method->method_description,
+						'title'       => $method->get_method_title() !== '' ? $method->get_method_title() : $method->get_title(),
+						'description' => $method->get_method_description() !== '' ? $method->get_method_description() : $method->get_description(),
 					];
 					return $acc;
 				},
@@ -427,7 +521,7 @@ class Checkout extends AbstractBlock {
 			$all_plugins             = \get_plugins(); // Note that `get_compatible_plugins_for_feature` calls `get_plugins` internally, so this is already in cache.
 			$incompatible_extensions = array_reduce(
 				$declared_extensions['incompatible'],
-				function( $acc, $item ) use ( $all_plugins ) {
+				function ( $acc, $item ) use ( $all_plugins ) {
 					$plugin      = $all_plugins[ $item ] ?? null;
 					$plugin_id   = $plugin['TextDomain'] ?? dirname( $item, 2 );
 					$plugin_name = $plugin['Name'] ?? $plugin_id;
@@ -465,22 +559,10 @@ class Checkout extends AbstractBlock {
 		$payment_gateways = WC()->payment_gateways->payment_gateways();
 		return array_filter(
 			$payment_gateways,
-			function( $payment_gateway ) {
+			function ( $payment_gateway ) {
 				return 'yes' === $payment_gateway->enabled;
 			}
 		);
-	}
-
-	/**
-	 * Are we currently on the admin block editor screen?
-	 */
-	protected function is_block_editor() {
-		if ( ! is_admin() || ! function_exists( 'get_current_screen' ) ) {
-			return false;
-		}
-		$screen = get_current_screen();
-
-		return $screen && $screen->is_block_editor();
 	}
 
 	/**
@@ -500,7 +582,7 @@ class Checkout extends AbstractBlock {
 			$payment_methods[ $payment_method_group ] = array_values(
 				array_filter(
 					$saved_payment_methods,
-					function( $saved_payment_method ) use ( $payment_gateways ) {
+					function ( $saved_payment_method ) use ( $payment_gateways ) {
 						return in_array( $saved_payment_method['method']['gateway'], array_keys( $payment_gateways ), true );
 					}
 				)

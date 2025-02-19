@@ -71,11 +71,6 @@ class ProductGalleryLargeImage extends AbstractBlock {
 			return '';
 		}
 
-		if ( class_exists( 'WC_Frontend_Scripts' ) ) {
-			$frontend_scripts = new \WC_Frontend_Scripts();
-			$frontend_scripts::load_scripts();
-		}
-
 		$processor = new \WP_HTML_Tag_Processor( $content );
 		$processor->next_tag();
 		$processor->remove_class( 'wp-block-woocommerce-product-gallery-large-image' );
@@ -98,7 +93,7 @@ class ProductGalleryLargeImage extends AbstractBlock {
 				'{content}'            => $content,
 				'{directives}'         => array_reduce(
 					array_keys( $directives ),
-					function( $carry, $key ) use ( $directives ) {
+					function ( $carry, $key ) use ( $directives ) {
 						return $carry . ' ' . $key . '="' . esc_attr( $directives[ $key ] ) . '"';
 					},
 					''
@@ -118,15 +113,17 @@ class ProductGalleryLargeImage extends AbstractBlock {
 	private function get_main_images_html( $context, $product_id ) {
 		$attributes = array(
 			'class'                  => 'wc-block-woocommerce-product-gallery-large-image__image',
-			'data-wc-bind--hidden'   => '!state.isSelected',
 			'data-wc-watch'          => 'callbacks.scrollInto',
 			'data-wc-bind--tabindex' => 'state.thumbnailTabIndex',
 			'data-wc-on--keydown'    => 'actions.onSelectedLargeImageKeyDown',
 			'data-wc-class--wc-block-woocommerce-product-gallery-large-image__image--active-image-slide' => 'state.isSelected',
+			'data-wc-on--touchstart' => 'actions.onTouchStart',
+			'data-wc-on--touchmove'  => 'actions.onTouchMove',
+			'data-wc-on--touchend'   => 'actions.onTouchEnd',
 		);
 
 		if ( $context['fullScreenOnClick'] ) {
-			$attributes['class'] .= ' wc-block-woocommerce-product-gallery-large-image__image--full-screen-on-click wc-block-product-gallery-dialog-on-click';
+			$attributes['class'] .= ' wc-block-woocommerce-product-gallery-large-image__image--full-screen-on-click';
 		}
 
 		if ( $context['hoverZoom'] ) {
@@ -143,7 +140,7 @@ class ProductGalleryLargeImage extends AbstractBlock {
 		);
 
 		$main_image_with_wrapper = array_map(
-			function( $main_image_element ) {
+			function ( $main_image_element ) {
 				return "<li class='wc-block-product-gallery-large-image__wrapper'>" . $main_image_element . '</li>';
 			},
 			$main_images
@@ -151,7 +148,6 @@ class ProductGalleryLargeImage extends AbstractBlock {
 
 		$visible_main_image = array_shift( $main_images );
 		return array( $visible_main_image, $main_image_with_wrapper );
-
 	}
 
 	/**
@@ -187,8 +183,8 @@ class ProductGalleryLargeImage extends AbstractBlock {
 		);
 
 		return array(
-			'data-wc-interactive'    => wp_json_encode( array( 'namespace' => 'woocommerce/product-gallery' ) ),
-			'data-wc-context'        => wp_json_encode( $context, JSON_NUMERIC_CHECK ),
+			'data-wc-interactive'    => wp_json_encode( array( 'namespace' => 'woocommerce/product-gallery' ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP ),
+			'data-wc-context'        => wp_json_encode( $context, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP ),
 			'data-wc-on--mousemove'  => 'actions.startZoom',
 			'data-wc-on--mouseleave' => 'actions.resetZoom',
 		);

@@ -2,7 +2,7 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { __ } from '@wordpress/i18n';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { Icon, store, shipping } from '@wordpress/icons';
@@ -13,11 +13,11 @@ import {
 	useBlockProps,
 	RichText,
 } from '@wordpress/block-editor';
-import Button from '@woocommerce/base-components/button';
+import { Button } from '@ariakit/react';
 import { useShippingData } from '@woocommerce/base-context/hooks';
 import { innerBlockAreas } from '@woocommerce/blocks-checkout';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { CHECKOUT_STORE_KEY } from '@woocommerce/block-data';
+import { checkoutStore as checkoutStoreDescriptor } from '@woocommerce/block-data';
 import ExternalLinkCard from '@woocommerce/editor-components/external-link-card';
 import { useEffect } from '@wordpress/element';
 
@@ -53,15 +53,12 @@ const LocalPickupSelector = ( {
 } ) => {
 	return (
 		<Button
-			className={ classnames(
-				'wc-block-checkout__shipping-method-option',
-				{
-					'wc-block-checkout__shipping-method-option--selected':
-						checked === 'pickup',
-				}
-			) }
+			render={ <div /> }
+			className={ clsx( 'wc-block-checkout__shipping-method-option', {
+				'wc-block-checkout__shipping-method-option--selected':
+					checked === 'pickup',
+			} ) }
 			onClick={ onClick }
-			removeTextWrap
 		>
 			{ showIcon === true && (
 				<Icon
@@ -116,15 +113,12 @@ const ShippingSelector = ( {
 
 	return (
 		<Button
-			className={ classnames(
-				'wc-block-checkout__shipping-method-option',
-				{
-					'wc-block-checkout__shipping-method-option--selected':
-						checked === 'shipping',
-				}
-			) }
+			render={ <div /> }
+			className={ clsx( 'wc-block-checkout__shipping-method-option', {
+				'wc-block-checkout__shipping-method-option--selected':
+					checked === 'shipping',
+			} ) }
 			onClick={ onClick }
-			removeTextWrap
 		>
 			{ showIcon === true && (
 				<Icon
@@ -176,9 +170,9 @@ export const Edit = ( {
 		// each time the attribute changes.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ setAttributes ] );
-	const { setPrefersCollection } = useDispatch( CHECKOUT_STORE_KEY );
+	const { setPrefersCollection } = useDispatch( checkoutStoreDescriptor );
 	const { prefersCollection } = useSelect( ( select ) => {
-		const checkoutStore = select( CHECKOUT_STORE_KEY );
+		const checkoutStore = select( checkoutStoreDescriptor );
 		return {
 			prefersCollection: checkoutStore.prefersCollection(),
 		};
@@ -214,7 +208,7 @@ export const Edit = ( {
 		<FormStepBlock
 			attributes={ attributes }
 			setAttributes={ setAttributes }
-			className={ classnames(
+			className={ clsx(
 				'wc-block-checkout__shipping-method',
 				className
 			) }

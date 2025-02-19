@@ -27,7 +27,7 @@ export const WC_HEADER_PAGE_TITLE_SLOT_NAME = 'woocommerce_header_page_title';
 export const WooHeaderPageTitle: React.FC< {
 	children?: React.ReactNode;
 } > & {
-	Slot: React.FC< Slot.Props >;
+	Slot: React.FC< React.ComponentProps< typeof Slot > >;
 } = ( { children } ) => {
 	return <Fill name={ WC_HEADER_PAGE_TITLE_SLOT_NAME }>{ children }</Fill>;
 };
@@ -35,6 +35,8 @@ export const WooHeaderPageTitle: React.FC< {
 WooHeaderPageTitle.Slot = ( { fillProps } ) => (
 	<Slot name={ WC_HEADER_PAGE_TITLE_SLOT_NAME } fillProps={ fillProps }>
 		{ ( fills ) => {
+			// @ts-expect-error TypeScript infers `fills` as a single ReactNode, but it is actually an array of ReactNode. https://github.com/WordPress/gutenberg/blob/3416bf4b0db6679b86e8e4226cbdb0d3387b25d7/packages/components/src/slot-fill/slot.tsx#L71-L83
+			// Need to fix this upstream.
 			return <>{ [ ...fills ].pop() }</>;
 		} }
 	</Slot>

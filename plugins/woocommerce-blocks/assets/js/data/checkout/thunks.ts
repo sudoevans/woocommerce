@@ -4,11 +4,19 @@
 import type { CheckoutResponse } from '@woocommerce/types';
 import { store as noticesStore } from '@wordpress/notices';
 import { dispatch as wpDispatch, select as wpSelect } from '@wordpress/data';
+import type {
+	ActionCreatorsOf,
+	ConfigOf,
+	CurriedSelectorsOf,
+	DispatchFunction,
+	SelectFunction,
+} from '@wordpress/data/build-types/types';
+import { checkoutStore } from '@woocommerce/block-data';
 
 /**
  * Internal dependencies
  */
-import { STORE_KEY as PAYMENT_STORE_KEY } from '../payment/constants';
+import { store as paymentStore } from '../payment';
 import { removeNoticesByStatus } from '../../utils/notices';
 import {
 	getPaymentResultFromCheckoutResponse,
@@ -24,8 +32,12 @@ import type {
 	emitValidateEventType,
 	emitAfterProcessingEventsType,
 } from './types';
-import type { DispatchFromMap } from '../mapped-types';
-import * as actions from './actions';
+
+interface CheckoutThunkArgs {
+	select?: CurriedSelectorsOf< typeof checkoutStore >;
+	dispatch: ActionCreatorsOf< ConfigOf< typeof checkoutStore > >;
+	registry: { dispatch: DispatchFunction; select: SelectFunction };
+}
 
 /**
  * Based on the result of the payment, update the redirect url,
@@ -35,18 +47,12 @@ import * as actions from './actions';
 export const __internalProcessCheckoutResponse = (
 	response: CheckoutResponse
 ) => {
-	return ( {
-		dispatch,
-	}: {
-		dispatch: DispatchFromMap< typeof actions >;
-	} ) => {
+	return ( { dispatch }: CheckoutThunkArgs ) => {
 		const paymentResult = getPaymentResultFromCheckoutResponse( response );
 		dispatch.__internalSetRedirectUrl( paymentResult?.redirectUrl || '' );
 		// The local `dispatch` here is bound  to the actions of the data store. We need to use the global dispatch here
 		// to dispatch an action on a different store.
-		wpDispatch( PAYMENT_STORE_KEY ).__internalSetPaymentResult(
-			paymentResult
-		);
+		wpDispatch( paymentStore ).__internalSetPaymentResult( paymentResult );
 		dispatch.__internalSetAfterProcessing();
 	};
 };
@@ -59,7 +65,7 @@ export const __internalEmitValidateEvent: emitValidateEventType = ( {
 	observers,
 	setValidationErrors, // TODO: Fix this type after we move to validation store
 } ) => {
-	return ( { dispatch, registry } ) => {
+	return ( { dispatch, registry }: CheckoutThunkArgs ) => {
 		const { createErrorNotice } = registry.dispatch( noticesStore );
 		removeNoticesByStatus( 'error' );
 		emitEvent( observers, EVENTS.CHECKOUT_VALIDATION, {} ).then(
@@ -101,8 +107,7 @@ export const __internalEmitAfterProcessingEvents: emitAfterProcessingEventsType 
 				orderId: select.getOrderId(),
 				customerId: select.getCustomerId(),
 				orderNotes: select.getOrderNotes(),
-				processingResponse:
-					wpSelect( PAYMENT_STORE_KEY ).getPaymentResult(),
+				processingResponse: wpSelect( paymentStore ).getPaymentResult(),
 			};
 			if ( select.hasError() ) {
 				// allow payment methods or other things to customize the error

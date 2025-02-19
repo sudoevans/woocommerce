@@ -1,11 +1,11 @@
 /**
  * External dependencies
  */
-import classnames from 'classnames';
+import clsx from 'clsx';
 import { withFilteredAttributes } from '@woocommerce/shared-hocs';
 import { FormStep } from '@woocommerce/blocks-components';
 import { useSelect } from '@wordpress/data';
-import { CHECKOUT_STORE_KEY } from '@woocommerce/block-data';
+import { checkoutStore } from '@woocommerce/block-data';
 import { useCheckoutBlockContext } from '@woocommerce/blocks/checkout/context';
 
 /**
@@ -28,7 +28,7 @@ const FrontendBlock = ( {
 	className?: string;
 } ) => {
 	const checkoutIsProcessing = useSelect( ( select ) =>
-		select( CHECKOUT_STORE_KEY ).isProcessing()
+		select( checkoutStore ).isProcessing()
 	);
 
 	const { showFormStepNumbers } = useCheckoutBlockContext();
@@ -37,10 +37,7 @@ const FrontendBlock = ( {
 		<FormStep
 			id="contact-fields"
 			disabled={ checkoutIsProcessing }
-			className={ classnames(
-				'wc-block-checkout__contact-fields',
-				className
-			) }
+			className={ clsx( 'wc-block-checkout__contact-fields', className ) }
 			title={ title }
 			description={ description }
 			showStepNumber={ showFormStepNumbers }

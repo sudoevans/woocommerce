@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { Schema } from '@wordpress/core-data';
+import { Post } from '@wordpress/core-data';
 
 /**
  * Internal dependencies
@@ -10,7 +10,12 @@ import { ProductCategory } from '../product-categories/types';
 import { ProductTag } from '../product-tags/types';
 import { BaseQueryParams } from '../types';
 
-export type ProductType = 'simple' | 'grouped' | 'external' | 'variable';
+export type ProductType =
+	| 'simple'
+	| 'grouped'
+	| 'external'
+	| 'variable'
+	| 'variation';
 export type ProductStatus =
 	| 'auto-draft'
 	| 'deleted'
@@ -69,7 +74,7 @@ export type ProductCatalogVisibility =
 	| 'hidden';
 
 export type Product< Status = ProductStatus, Type = ProductType > = Omit<
-	Schema.Post,
+	Post,
 	'status' | 'categories'
 > & {
 	attributes: ProductProductAttribute[];
@@ -166,10 +171,10 @@ export type ReadOnlyProperties = ( typeof productReadOnlyProperties )[ number ];
 
 export type PartialProduct = Partial< Product > & Pick< Product, 'id' >;
 
-export type ProductQuery<
-	Status = ProductStatus,
-	Type = ProductType
-> = BaseQueryParams< keyof Product > & {
+export type ProductQuery< Status = ProductStatus, Type = ProductType > = Omit<
+	BaseQueryParams< keyof Omit< Product, 'orderby' > >,
+	'orderby'
+> & {
 	orderby?:
 		| 'date'
 		| 'id'
@@ -178,7 +183,8 @@ export type ProductQuery<
 		| 'slug'
 		| 'price'
 		| 'popularity'
-		| 'rating';
+		| 'rating'
+		| 'menu_order';
 	slug?: string;
 	status?: Status;
 	type?: Type;

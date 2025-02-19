@@ -4,7 +4,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { previewCart } from '@woocommerce/resource-previews';
 import * as wpDataFunctions from '@wordpress/data';
-import { CART_STORE_KEY, PAYMENT_STORE_KEY } from '@woocommerce/block-data';
+import { CART_STORE_KEY, paymentStore } from '@woocommerce/block-data';
 import { default as fetchMock } from 'jest-fetch-mock';
 import {
 	registerPaymentMethod,
@@ -46,27 +46,37 @@ jest.mock( '@woocommerce/blocks-components', () => {
 	};
 } );
 
-const originalSelect = jest.requireActual( '@wordpress/data' ).select;
-const selectMock = jest
-	.spyOn( wpDataFunctions, 'select' )
-	.mockImplementation( ( storeName ) => {
-		const originalStore = originalSelect( storeName );
-		if ( storeName === PAYMENT_STORE_KEY ) {
-			return {
-				...originalStore,
-				getState: () => {
-					const originalState = originalStore.getState();
-					return {
-						...originalState,
-						savedPaymentMethods: {},
-						availablePaymentMethods: {},
-						paymentMethodsInitialized: true,
-					};
-				},
-			};
-		}
-		return originalStore;
-	} );
+jest.mock( '@wordpress/data', () => {
+	const originalModule = jest.requireActual( '@wordpress/data' );
+	const originalBlockDataModule = jest.requireActual(
+		'@woocommerce/block-data'
+	);
+	return {
+		...originalModule,
+		select: jest.fn( ( storeDescriptor ) => {
+			const paymentStoreInMock = originalBlockDataModule.paymentStore;
+			const originalStore = originalModule.select( storeDescriptor );
+			if (
+				storeDescriptor === paymentStoreInMock ||
+				storeDescriptor === 'wc/store/payment'
+			) {
+				return {
+					...originalStore,
+					getState: () => {
+						const originalState = originalStore.getState();
+						return {
+							...originalState,
+							savedPaymentMethods: {},
+							availablePaymentMethods: {},
+							paymentMethodsInitialized: true,
+						};
+					},
+				};
+			}
+			return originalStore;
+		} ),
+	};
+} );
 
 const registerMockPaymentMethods = () => {
 	[ 'cod', 'credit-card' ].forEach( ( name ) => {
@@ -85,7 +95,7 @@ const registerMockPaymentMethods = () => {
 			ariaLabel: name,
 		} );
 	} );
-	dispatch( PAYMENT_STORE_KEY ).__internalUpdateAvailablePaymentMethods();
+	dispatch( paymentStore ).__internalUpdateAvailablePaymentMethods();
 };
 
 const resetMockPaymentMethods = () => {
@@ -126,9 +136,6 @@ describe( 'PaymentMethods', () => {
 			// We might get more than one match because the `speak()` function
 			// creates an extra `div` with the notice contents used for a11y.
 			expect( noPaymentMethods.length ).toBeGreaterThanOrEqual( 1 );
-
-			// Reset the mock back to how it was because we don't need it anymore after this test.
-			selectMock.mockRestore();
 		} );
 	} );
 
@@ -138,7 +145,7 @@ describe( 'PaymentMethods', () => {
 		const ShowActivePaymentMethod = () => {
 			const { activePaymentMethod, activeSavedToken } =
 				wpDataFunctions.useSelect( ( select ) => {
-					const store = select( PAYMENT_STORE_KEY );
+					const store = select( paymentStore );
 					return {
 						activePaymentMethod: store.getActivePaymentMethod(),
 						activeSavedToken: store.getActiveSavedToken(),
@@ -160,9 +167,7 @@ describe( 'PaymentMethods', () => {
 		// Wait for the payment methods to finish loading before rendering.
 		await waitFor( () => {
 			expect(
-				wpDataFunctions
-					.select( PAYMENT_STORE_KEY )
-					.getActivePaymentMethod()
+				wpDataFunctions.select( paymentStore ).getActivePaymentMethod()
 			).toBe( 'cod' );
 		} );
 

@@ -17,10 +17,12 @@ export interface BlockAttributes {
 export interface AddToCartButtonPlaceholderAttributes {
 	className: string;
 	style: React.CSSProperties;
+	isLoading: boolean;
 }
 
-export interface AddToCartButtonAttributes
-	extends AddToCartButtonPlaceholderAttributes {
+export interface AddToCartButtonAttributes {
+	className: string;
+	style: React.CSSProperties;
 	product: {
 		id: number;
 		permalink: string;
