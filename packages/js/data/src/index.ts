@@ -49,13 +49,19 @@ export { ShippingMethod } from './shipping-methods/types';
 
 // Export stores
 export { store as onboardingStore } from './onboarding';
+export { store as experimentalProductAttributesStore } from './product-attributes';
+export { store as experimentalProductAttributeTermsStore } from './product-attribute-terms';
+export { store as experimentalProductVariationsStore } from './product-variations';
+export { store as experimentalProductTagsStore } from './product-tags';
+export { store as experimentalShippingZonesStore } from './shipping-zones';
+export { store as experimentalProductShippingClassesStore } from './product-shipping-classes';
+export { store as experimentalProductCategoriesStore } from './product-categories';
+export { store as experimentalTaxClassesStore } from './tax-classes';
 export { store as notesStore } from './notes';
 export { store as reviewsStore } from './reviews';
 export { store as shippingMethodsStore } from './shipping-methods';
 export { store as settingsStore } from './settings';
 export { store as ordersStore } from './orders';
-export { store as experimentalShippingZonesStore } from './shipping-zones';
-export { store as experimentalTaxClassesStore } from './tax-classes';
 export { store as pluginsStore } from './plugins';
 export { store as optionsStore } from './options';
 export { store as userStore } from './user';

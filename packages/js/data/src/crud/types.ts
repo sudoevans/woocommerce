@@ -19,7 +19,10 @@ export type IdQuery =
 	| IdType
 	| {
 			id: IdType;
-			[ key: string ]: IdType;
+			[ key: string ]: unknown;
+	  }
+	| {
+			[ key: string ]: unknown;
 	  };
 
 export type Item = {
@@ -67,10 +70,10 @@ export type CrudActions<
 > &
 	MapActions<
 		{
-			delete: ( id: IdType ) => Item;
+			delete: ( id: IdQuery ) => Item;
 		},
 		ResourceName,
-		IdType,
+		IdQuery,
 		Generator< unknown, ItemType >
 	>;
 
@@ -135,7 +138,10 @@ export type CrudSelectors<
 export type MapSelectors< Type, ResourceName, ParamType, ReturnType > = {
 	[ Property in keyof Type as `get${ Capitalize<
 		string & ResourceName
-	> }${ Capitalize< string & Property > }` ]: ( x?: ParamType ) => ReturnType;
+	> }${ Capitalize< string & Property > }` ]: (
+		state: unknown,
+		x?: ParamType
+	) => ReturnType;
 };
 
 export type MapActions< Type, ResourceName, ParamType, ReturnType > = {

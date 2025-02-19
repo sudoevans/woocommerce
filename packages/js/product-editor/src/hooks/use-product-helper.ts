@@ -12,8 +12,7 @@ import {
 	PRODUCTS_STORE_NAME,
 	ReadOnlyProperties,
 	productReadOnlyProperties,
-	EXPERIMENTAL_PRODUCT_VARIATIONS_STORE_NAME,
-	ProductVariation,
+	experimentalProductVariationsStore,
 } from '@woocommerce/data';
 import { recordEvent } from '@woocommerce/tracks';
 import { CurrencyContext } from '@woocommerce/currency';
@@ -61,15 +60,7 @@ export function useProductHelper() {
 	const {
 		batchUpdateProductVariations,
 		invalidateResolutionForStoreSelector,
-	} = useDispatch( EXPERIMENTAL_PRODUCT_VARIATIONS_STORE_NAME ) as {
-		batchUpdateProductVariations< T >(
-			id: Record< string, number >,
-			data: Record< string, unknown >
-		): T;
-		invalidateResolutionForStoreSelector(
-			...args: string[]
-		): Promise< void >;
-	};
+	} = useDispatch( experimentalProductVariationsStore );
 
 	const { createNotice } = useDispatch( 'core/notices' );
 	const [ isDeleting, setIsDeleting ] = useState( false );
@@ -156,9 +147,7 @@ export function useProductHelper() {
 	) {
 		if ( ! variationsOrder ) return undefined;
 
-		return batchUpdateProductVariations<
-			Promise< { update: ProductVariation[] } >
-		>(
+		return batchUpdateProductVariations(
 			{
 				product_id: productId,
 			},
@@ -169,7 +158,7 @@ export function useProductHelper() {
 					.flatMap( Object.entries )
 					// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 					// @ts-ignore
-					.map( ( [ id, menu_order ] ) => ( {
+					.map( ( [ id, menu_order ]: [ number, number ] ) => ( {
 						id,
 						menu_order,
 					} ) ),

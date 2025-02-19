@@ -171,10 +171,10 @@ export type ReadOnlyProperties = ( typeof productReadOnlyProperties )[ number ];
 
 export type PartialProduct = Partial< Product > & Pick< Product, 'id' >;
 
-export type ProductQuery<
-	Status = ProductStatus,
-	Type = ProductType
-> = BaseQueryParams< keyof Product > & {
+export type ProductQuery< Status = ProductStatus, Type = ProductType > = Omit<
+	BaseQueryParams< keyof Omit< Product, 'orderby' > >,
+	'orderby'
+> & {
 	orderby?:
 		| 'date'
 		| 'id'
@@ -183,7 +183,8 @@ export type ProductQuery<
 		| 'slug'
 		| 'price'
 		| 'popularity'
-		| 'rating';
+		| 'rating'
+		| 'menu_order';
 	slug?: string;
 	status?: Status;
 	type?: Type;
