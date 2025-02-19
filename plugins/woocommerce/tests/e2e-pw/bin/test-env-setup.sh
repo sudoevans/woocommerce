@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ ! -z ${CI+y} ]; then
-	# In CI we want to execute the setup behind single container call, while in dev-environments we use the script as it is.
+    # In CI we want to execute the setup behind single container call, while in dev-environments we use the script as it is.
     # Inside the container the command executed from /var/www/html path as pwd
     echo -e '--> Dispatching script execution into tests-cli\n'
     wp-env run --debug tests-cli cp wp-content/plugins/woocommerce/tests/e2e-pw/bin/test-env-setup.sh test-env-setup-ci.sh
@@ -10,11 +10,11 @@ if [ ! -z ${CI+y} ]; then
     exit $?
 fi
 
+echo -e 'Install twentytwenty, twentytwentytwo and storefront themes \n'
+wp-env run tests-cli wp theme install storefront twentytwenty twentytwentytwo &
+
 echo -e 'Activate default theme \n'
 wp-env run tests-cli wp theme activate twentytwentythree
-
-echo -e 'Install twentytwenty, twentytwentytwo and storefront themes \n'
-wp-env run tests-cli wp theme install twentytwenty twentytwentytwo storefront &
 
 echo -e 'Update URL structure \n'
 wp-env run tests-cli wp rewrite structure '/%postname%/' --hard
